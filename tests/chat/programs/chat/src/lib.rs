@@ -1,5 +1,6 @@
 //! A simple chat program using a ring buffer to store messages.
 
+use anchor_lang::accounts::loader::Loader;
 use anchor_lang::prelude::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
@@ -11,7 +12,7 @@ pub mod chat {
     pub fn create_user(ctx: Context<CreateUser>, name: String) -> Result<()> {
         ctx.accounts.user.name = name;
         ctx.accounts.user.authority = *ctx.accounts.authority.key;
-        ctx.accounts.user.bump = ctx.bumps.user;
+        ctx.accounts.user.bump = *ctx.bumps.get("user").unwrap();
         Ok(())
     }
     pub fn create_chat_room(ctx: Context<CreateChatRoom>, name: String) -> Result<()> {
@@ -45,7 +46,7 @@ pub struct CreateUser<'info> {
         seeds = [authority.key().as_ref()],
         bump,
         payer = authority,
-        space = 8 + User::INIT_SPACE,
+        space = 320,
     )]
     user: Account<'info, User>,
     #[account(mut)]
@@ -56,7 +57,7 @@ pub struct CreateUser<'info> {
 #[derive(Accounts)]
 pub struct CreateChatRoom<'info> {
     #[account(zero)]
-    chat_room: AccountLoader<'info, ChatRoom>,
+    chat_room: Loader<'info, ChatRoom>,
 }
 
 #[derive(Accounts)]
@@ -69,13 +70,11 @@ pub struct SendMessage<'info> {
     user: Account<'info, User>,
     authority: Signer<'info>,
     #[account(mut)]
-    chat_room: AccountLoader<'info, ChatRoom>,
+    chat_room: Loader<'info, ChatRoom>,
 }
 
 #[account]
-#[derive(InitSpace)]
 pub struct User {
-    #[max_len(200)]
     name: String,
     authority: Pubkey,
     bump: u8,

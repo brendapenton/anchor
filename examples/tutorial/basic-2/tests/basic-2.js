@@ -1,5 +1,5 @@
 const assert = require("assert");
-const anchor = require("@coral-xyz/anchor");
+const anchor = require("@project-serum/anchor");
 const { SystemProgram } = anchor.web3;
 
 describe("basic-2", () => {
@@ -15,15 +15,14 @@ describe("basic-2", () => {
   const program = anchor.workspace.Basic2;
 
   it("Creates a counter", async () => {
-    await program.methods
-      .create(provider.wallet.publicKey)
-      .accounts({
+    await program.rpc.create(provider.wallet.publicKey, {
+      accounts: {
         counter: counter.publicKey,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
-      })
-      .signers([counter])
-      .rpc();
+      },
+      signers: [counter],
+    });
 
     let counterAccount = await program.account.counter.fetch(counter.publicKey);
 
@@ -32,13 +31,12 @@ describe("basic-2", () => {
   });
 
   it("Updates a counter", async () => {
-    await program.methods
-      .increment()
-      .accounts({
+    await program.rpc.increment({
+      accounts: {
         counter: counter.publicKey,
         authority: provider.wallet.publicKey,
-      })
-      .rpc();
+      },
+    });
 
     const counterAccount = await program.account.counter.fetch(
       counter.publicKey

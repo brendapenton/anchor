@@ -1,0 +1,2233 @@
+[1mdiff --git a/.github/actions/setup-solana/action.yaml b/.github/actions/setup-solana/action.yaml[m
+[1mindex 6ce55173..f24aa486 100644[m
+[1m--- a/.github/actions/setup-solana/action.yaml[m
+[1m+++ b/.github/actions/setup-solana/action.yaml[m
+[36m@@ -3,38 +3,19 @@[m [mdescription: "Setup Solana"[m
+ runs:[m
+   using: "composite"[m
+   steps:[m
+[31m-    - uses: actions/cache@v3[m
+[31m-      name: Cache Solana Tool Suite[m
+[31m-      id: cache-solana[m
+[31m-      with:[m
+[31m-        path: |[m
+[31m-          ~/.cache/solana/[m
+[31m-          ~/.local/share/solana/[m
+[31m-        key: solana-${{ runner.os }}-v0000-${{ env.SOLANA_CLI_VERSION }}-${{ env.SOLANG_VERSION }}[m
+[31m-    - uses: nick-fields/retry@v2[m
+[31m-      if: steps.cache-solana.outputs.cache-hit != 'true'[m
+[31m-      with:[m
+[31m-        retry_wait_seconds: 300[m
+[31m-        timeout_minutes: 2[m
+[31m-        max_attempts: 10[m
+[31m-        retry_on: error[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Solana Tool Suite[m
+[32m+[m[32m        id: cache-solana[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cache/solana/[m
+[32m+[m[32m            ~/.local/share/solana/[m
+[32m+[m[32m          key: solana-${{ runner.os }}-v0000-${{ env.SOLANA_CLI_VERSION }}[m
+[32m+[m[32m      - run: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_CLI_VERSION }}/install)"[m
+         shell: bash[m
+[31m-        command: sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_CLI_VERSION }}/install)"[m
+[31m-    - uses: nick-fields/retry@v2[m
+[31m-      if: steps.cache-solana.outputs.cache-hit != 'true'[m
+[31m-      with:[m
+[31m-        retry_wait_seconds: 300[m
+[31m-        timeout_minutes: 2[m
+[31m-        max_attempts: 10[m
+[31m-        retry_on: error[m
+[32m+[m[32m      - run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: solana-keygen new --no-bip39-passphrase[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: solana config set --url localhost[m
+         shell: bash[m
+[31m-        command: |[m
+[31m-          curl -sSL -o /home/runner/.local/share/solana/install/active_release/bin/solang \[m
+[31m-            https://github.com/hyperledger/solang/releases/download/v${{ env.SOLANG_VERSION }}/solang-linux-x86-64[m
+[31m-          chmod 755 /home/runner/.local/share/solana/install/active_release/bin/solang[m
+[31m-    - run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH[m
+[31m-      shell: bash[m
+[31m-    - run: solana-keygen new --no-bip39-passphrase[m
+[31m-      shell: bash[m
+[31m-    - run: solana config set --url localhost[m
+[31m-      shell: bash[m
+[1mdiff --git a/.github/actions/setup-ts/action.yaml b/.github/actions/setup-ts/action.yaml[m
+[1mindex 6e058cb7..26ce6274 100644[m
+[1m--- a/.github/actions/setup-ts/action.yaml[m
+[1m+++ b/.github/actions/setup-ts/action.yaml[m
+[36m@@ -3,34 +3,27 @@[m [mdescription: "Setup ts"[m
+ runs:[m
+   using: "composite"[m
+   steps:[m
+[31m-    - uses: actions/setup-node@v3[m
+[31m-      with:[m
+[31m-        node-version: ${{ env.NODE_VERSION }}[m
+[31m-    - uses: actions/cache@v3[m
+[31m-      name: Cache Typescript node_modules[m
+[31m-      id: cache-typescript-node-modules[m
+[31m-      with:[m
+[31m-        path: |[m
+[31m-          ./ts/node_modules/[m
+[31m-        key: solana-${{ runner.os }}-v0000-${{ env.NODE_VERSION }}-${{ hashFiles('./ts/**/yarn.lock') }}[m
+[31m-    - uses: actions/cache@v3[m
+[31m-      name: Cache Typescript Dist[m
+[31m-      id: cache-typescript-dist[m
+[31m-      with:[m
+[31m-        path: |[m
+[31m-          ./ts/dist/[m
+[31m-        key: solana-${{ runner.os }}-v0000-${{ env.NODE_VERSION }}-${{ hashFiles('./ts/**/*.ts') }}[m
+[31m-    - run: cd ts/packages/borsh && yarn --frozen-lockfile && yarn build && yarn link && cd ../../../[m
+[31m-      shell: bash[m
+[31m-    - run: cd ts/packages/anchor-errors && yarn --frozen-lockfile && yarn build && yarn link && cd ../../../[m
+[31m-      shell: bash[m
+[31m-    - run: cd ts/packages/anchor && yarn --frozen-lockfile && yarn build:node && yarn link && cd ../../../[m
+[31m-      shell: bash[m
+[31m-    - run: cd ts/packages/spl-associated-token-account && yarn --frozen-lockfile && yarn build:node && yarn link && cd ../../../[m
+[31m-      shell: bash[m
+[31m-    - run: cd ts/packages/spl-token && yarn --frozen-lockfile && yarn build:node && yarn link && cd ../../../[m
+[31m-      shell: bash[m
+[31m-    - run: cd examples/tutorial && yarn link @coral-xyz/anchor @coral-xyz/borsh && yarn --frozen-lockfile && cd ../../[m
+[31m-      shell: bash[m
+[31m-    - run: cd tests && yarn link @coral-xyz/anchor @coral-xyz/borsh @coral-xyz/spl-associated-token-account @coral-xyz/spl-token && yarn --frozen-lockfile && cd ..[m
+[31m-      shell: bash[m
+[32m+[m[32m      - uses: actions/setup-node@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          node-version: ${{ env.NODE_VERSION }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Typescript node_modules[m
+[32m+[m[32m        id: cache-typescript-node-modules[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ./ts/node_modules/[m
+[32m+[m[32m          key: solana-${{ runner.os }}-v0000-${{ env.NODE_VERSION }}-${{ hashFiles('./ts/**/yarn.lock') }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Typescript Dist[m
+[32m+[m[32m        id: cache-typescript-dist[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ./ts/dist/[m
+[32m+[m[32m          key: solana-${{ runner.os }}-v0000-${{ env.NODE_VERSION }}-${{ hashFiles('./ts/**/*.ts') }}[m[41m  [m
+[32m+[m[32m      - run: cd ts && yarn --frozen-lockfile && yarn build:node && yarn link && cd ../[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn link @project-serum/anchor && yarn --frozen-lockfile && cd ../../[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: cd tests && yarn link @project-serum/anchor && yarn --frozen-lockfile && cd ..[m
+[32m+[m[32m        shell: bash[m
+[41m+        [m
+[1mdiff --git a/.github/actions/setup/action.yaml b/.github/actions/setup/action.yaml[m
+[1mindex 7a88f311..1ac983c8 100644[m
+[1m--- a/.github/actions/setup/action.yaml[m
+[1m+++ b/.github/actions/setup/action.yaml[m
+[36m@@ -3,9 +3,9 @@[m [mdescription: "Setup"[m
+ runs:[m
+   using: "composite"[m
+   steps:[m
+[31m-    - run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev[m
+[31m-      shell: bash[m
+[31m-    - run: echo "ANCHOR_VERSION=$(cat ./VERSION)" >> $GITHUB_ENV[m
+[31m-      shell: bash[m
+[31m-    - run: git submodule update --init --recursive --depth 1[m
+[31m-      shell: bash[m
+[32m+[m[32m      - run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: echo "ANCHOR_VERSION=$(cat ./VERSION)" >> $GITHUB_ENV[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: git submodule update --init --recursive --depth 1[m
+[32m+[m[32m        shell: bash[m
+[1mdiff --git a/.github/issue_template.md b/.github/issue_template.md[m
+[1mindex 56a1455e..fc38cbfc 100644[m
+[1m--- a/.github/issue_template.md[m
+[1m+++ b/.github/issue_template.md[m
+[36m@@ -1 +1 @@[m
+[31m-⚠️ Don't use issues for support questions ("How does x feature work in Anchor? How to do x in Anchor?"). Use the discord instead https://discord.gg/NHHGSXAnXk (but don't ping maintainers). ⚠️[m
+[32m+[m[32m⚠️ Don't use issues for support questions ("How does x feature work in Anchor? How to do x in Anchor?"). Use the discord instead https://discord.gg/GVRw4kHB (but don't ping maintainers). ⚠️[m
+[1mdiff --git a/.github/workflows/no-caching-tests.yaml b/.github/workflows/no-caching-tests.yaml[m
+[1mdeleted file mode 100644[m
+[1mindex 475d7d55..00000000[m
+[1m--- a/.github/workflows/no-caching-tests.yaml[m
+[1m+++ /dev/null[m
+[36m@@ -1,18 +0,0 @@[m
+[31m-name: No Caching Tests[m
+[31m-[m
+[31m-on:[m
+[31m-  push:[m
+[31m-    branches:[m
+[31m-      - master[m
+[31m-[m
+[31m-jobs:[m
+[31m-  no-caching-tests:[m
+[31m-    name: Reusable[m
+[31m-    uses: ./.github/workflows/reusable-tests.yaml[m
+[31m-    with:[m
+[31m-      cache: false[m
+[31m-      solana_cli_version: 1.18.17[m
+[31m-      solang_version: 0.3.2[m
+[31m-      node_version: 18.18.0[m
+[31m-      cargo_profile: release[m
+[31m-      anchor_binary_name: anchor-binary-no-caching[m
+[1mdiff --git a/.github/workflows/no-cashing-tests.yaml b/.github/workflows/no-cashing-tests.yaml[m
+[1mnew file mode 100644[m
+[1mindex 00000000..7bbfb1b6[m
+[1m--- /dev/null[m
+[1m+++ b/.github/workflows/no-cashing-tests.yaml[m
+[36m@@ -0,0 +1,309 @@[m
+[32m+[m[32mname: No Cashing Tests[m
+[32m+[m
+[32m+[m[32mon:[m
+[32m+[m[32m  push:[m
+[32m+[m[32m    branches:[m
+[32m+[m[32m      - master[m
+[32m+[m[32menv:[m
+[32m+[m[32m  SOLANA_CLI_VERSION: 1.9.13[m
+[32m+[m[32m  NODE_VERSION: 17.0.1[m
+[32m+[m
+[32m+[m[32mjobs:[m
+[32m+[m[32m  test-core:[m
+[32m+[m[32m    name: Core Tests[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: actions/setup-node@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          node-version: ${{ env.NODE_VERSION }}[m
+[32m+[m[32m      - run: cargo build[m
+[32m+[m[32m      - run: cargo fmt -- --check[m
+[32m+[m[32m      - run: cargo clippy --all-targets -- -D warnings[m
+[32m+[m[32m      - run: cargo test[m
+[32m+[m[32m      # using singlethreaded testing for avm so that tests that change files do not conflict with each other[m
+[32m+[m[32m      - run: cd avm && cargo fmt -- --check && cargo clippy --all-targets -- -D warnings && cargo test -- --test-threads=1[m
+[32m+[m[32m      - run: cd ts && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd ts && yarn test[m
+[32m+[m[32m      - run: cd ts && yarn lint[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn lint[m
+[32m+[m[32m      - run: cd tests && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd tests && yarn lint[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  setup-anchor-cli:[m
+[32m+[m[32m    name: Setup Anchor cli[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m
+[32m+[m[32m      - run: cargo install --path cli anchor-cli --locked --force[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m[32m      - uses: actions/upload-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-examples:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Examples Test[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +rwx ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn workspaces run test[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  setup-client-example:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Setup Client Example Test[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    strategy:[m
+[32m+[m[32m      fail-fast: false[m
+[32m+[m[32m      matrix:[m
+[32m+[m[32m        node:[m
+[32m+[m[32m          - path: tests/events/[m
+[32m+[m[32m            name: events.so[m
+[32m+[m[32m          - path: examples/tutorial/basic-4/[m
+[32m+[m[32m            name: basic_4.so[m
+[32m+[m[32m          - path: examples/tutorial/basic-2/[m
+[32m+[m[32m            name: basic_2.so[m
+[32m+[m[32m          - path: tests/composite/[m
+[32m+[m[32m            name: composite.so[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +rwx ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: cd ${{ matrix.node.path }} && anchor build --skip-lint[m
+[32m+[m[32m      - uses: actions/upload-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: ${{ matrix.node.name }}[m
+[32m+[m[32m          path: ${{ matrix.node.path }}target/deploy/${{ matrix.node.name }}[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-client-example:[m
+[32m+[m[32m    needs: setup-client-example[m
+[32m+[m[32m    name: Client Example Test[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: events.so[m
+[32m+[m[32m          path: tests/events/target/deploy/[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: basic_4.so[m
+[32m+[m[32m          path: examples/tutorial/basic-4/target/deploy/[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: basic_2.so[m
+[32m+[m[32m          path: examples/tutorial/basic-2/target/deploy/[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: composite.so[m
+[32m+[m[32m          path: tests/composite/target/deploy/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m[32m      - run: cd client/example && ./run-test.sh[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-bpf-upgradeable-state:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test tests/bpf-upgradeable-state[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: solana-test-validator -r --quiet &[m
+[32m+[m[32m        name: start validator[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && anchor build --skip-lint[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && solana program deploy --program-id program_with_different_programdata.json target/deploy/bpf_upgradeable_state.so[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && cp bpf_upgradeable_state-keypair.json target/deploy/bpf_upgradeable_state-keypair.json && anchor test --skip-local-validator --skip-build --skip-lint[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && npx tsc --noEmit[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  # this test exists to make sure that anchor[m
+[32m+[m[32m  # checks rent correctly for legacy accounts[m
+[32m+[m[32m  # that don't have to be rent-exempt[m
+[32m+[m[32m  test-misc-non-rent-exempt:[m
+[32m+[m[32m    # the anchor cli is built with a different solana version[m
+[32m+[m[32m    # but that's fine since it's just the cli[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test tests/misc/nonRentExempt[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      # using an outdated validator but that[m
+[32m+[m[32m      # is ok as long as the test doesn't[m
+[32m+[m[32m      # include newer incompatible features[m
+[32m+[m[32m      - run: sh -c "$(curl -sSfL https://release.solana.com/v1.8.14/install)"[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: solana-keygen new --no-bip39-passphrase[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: solana config set --url localhost[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: cd tests/misc && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd tests/misc[m
+[32m+[m[32m      - run: cd tests/misc && chmod +x ci.sh && ./ci.sh[m
+[32m+[m[32m      - run: cd tests/misc && anchor test --skip-lint[m
+[32m+[m
+[32m+[m[32m  test-anchor-init:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test Anchor Init[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: cd "$(mktemp -d)" && anchor init hello-anchor && cd hello-anchor && yarn link @project-serum/anchor && yarn && anchor test && yarn lint:fix[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-programs:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test ${{ matrix.node.path }}[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    strategy:[m
+[32m+[m[32m      fail-fast: false[m
+[32m+[m[32m      matrix:[m
+[32m+[m[32m        node:[m
+[32m+[m[32m          - cmd: cd tests/sysvars && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/sysvars[m
+[32m+[m[32m          - cmd: cd tests/composite && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/composite[m
+[32m+[m[32m          - cmd: cd tests/errors && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/errors[m
+[32m+[m[32m          - cmd: cd tests/spl/token-proxy && anchor test --skip-lint[m
+[32m+[m[32m            path: spl/token-proxy[m
+[32m+[m[32m          - cmd: cd tests/multisig && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/multisig[m
+[32m+[m[32m          - cmd: cd tests/interface && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/interface[m
+[32m+[m[32m          - cmd: cd tests/lockup && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/lockup[m
+[32m+[m[32m          - cmd: cd tests/swap/deps/serum-dex/dex && cargo build-bpf -- --locked && cd ../../../ && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/swap[m
+[32m+[m[32m          - cmd: cd tests/escrow && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/escrow[m
+[32m+[m[32m          - cmd: cd tests/pyth && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/pyth[m
+[32m+[m[32m          - cmd: cd tests/system-accounts && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/system-accounts[m
+[32m+[m[32m          - cmd: cd tests/misc && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/misc[m
+[32m+[m[32m          - cmd: cd tests/events && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/events[m
+[32m+[m[32m          - cmd: cd tests/cashiers-check && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/cashiers-check[m
+[32m+[m[32m          - cmd: cd tests/declare-id && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/declare-id[m
+[32m+[m[32m          - cmd: cd tests/typescript && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/typescript[m
+[32m+[m[32m          - cmd: cd tests/zero-copy && anchor test --skip-lint && cd programs/zero-copy && cargo test-bpf[m
+[32m+[m[32m            path: tests/zero-copy[m
+[32m+[m[32m          - cmd: cd tests/chat && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/chat[m
+[32m+[m[32m          - cmd: cd tests/ido-pool && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/ido-pool[m
+[32m+[m[32m          - cmd: cd tests/cfo && anchor run test-with-build && cd deps/stake && git checkout Cargo.lock && cd ../swap && git checkout Cargo.lock[m
+[32m+[m[32m            path: tests/cfo[m
+[32m+[m[32m          - cmd: cd tests/auction-house && yarn --frozen-lockfile && anchor test --skip-lint && git checkout Cargo.lock[m
+[32m+[m[32m            path: tests/auction-house[m
+[32m+[m[32m          - cmd: cd tests/floats && yarn --frozen-lockfile && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/floats[m
+[32m+[m[32m          - cmd: cd tests/safety-checks && anchor run test[m
+[32m+[m[32m            path: tests/safety-checks[m
+[32m+[m[32m          - cmd: cd tests/custom-coder && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/custom-coder[m
+[32m+[m[32m          - cmd: cd tests/validator-clone && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/validator-clone[m
+[32m+[m[32m          - cmd: cd tests/cpi-returns && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/cpi-returns[m
+[32m+[m[32m          - cmd: cd tests/multiple-suites && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/multiple-suites[m
+[32m+[m[32m          - cmd: cd tests/pda-derivation && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/pda-derivation[m
+[32m+[m[32m          - cmd: cd tests/anchor-cli-idl && ./test.sh[m
+[32m+[m[32m            path: tests/anchor-cli-idl[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary-no-caching[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: ${{ matrix.node.cmd }}[m
+[32m+[m[32m        name: ${{ matrix.node.path }} program test[m
+[32m+[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[1mdiff --git a/.github/workflows/reusable-tests.yaml b/.github/workflows/reusable-tests.yaml[m
+[1mdeleted file mode 100644[m
+[1mindex bf2019f8..00000000[m
+[1m--- a/.github/workflows/reusable-tests.yaml[m
+[1m+++ /dev/null[m
+[36m@@ -1,498 +0,0 @@[m
+[31m-name: Reusable Tests[m
+[31m-[m
+[31m-on:[m
+[31m-  workflow_call:[m
+[31m-    inputs:[m
+[31m-      cache:[m
+[31m-        required: true[m
+[31m-        type: boolean[m
+[31m-      solana_cli_version:[m
+[31m-        required: true[m
+[31m-        type: string[m
+[31m-      solang_version:[m
+[31m-        required: true[m
+[31m-        type: string[m
+[31m-      node_version:[m
+[31m-        required: true[m
+[31m-        type: string[m
+[31m-      cargo_profile:[m
+[31m-        required: true[m
+[31m-        type: string[m
+[31m-      anchor_binary_name:[m
+[31m-        required: true[m
+[31m-        type: string[m
+[31m-env:[m
+[31m-  CACHE: inputs.cache[m
+[31m-  SOLANA_CLI_VERSION: ${{ inputs.solana_cli_version }}[m
+[31m-  SOLANG_VERSION: ${{ inputs.solang_version }}[m
+[31m-  NODE_VERSION: ${{ inputs.node_version }}[m
+[31m-  CARGO_PROFILE: ${{ inputs.cargo_profile }}[m
+[31m-  ANCHOR_BINARY_NAME: ${{ inputs.anchor_binary_name }}[m
+[31m-  CARGO_CACHE_PATH: |[m
+[31m-    ~/.cargo/bin/[m
+[31m-    ~/.cargo/registry/index/[m
+[31m-    ~/.cargo/registry/cache/[m
+[31m-    ~/.cargo/git/db/[m
+[31m-    ./target/[m
+[31m-[m
+[31m-jobs:[m
+[31m-  test-core:[m
+[31m-    name: Core Tests[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: actions/setup-node@v3[m
+[31m-        with:[m
+[31m-          node-version: ${{ env.NODE_VERSION }}[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache Cargo registry + index[m
+[31m-        id: cache-cargo-build[m
+[31m-        with:[m
+[31m-          path: ${{ env.CARGO_CACHE_PATH }}[m
+[31m-          key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-      - run: cargo build[m
+[31m-      - run: cargo fmt -- --check[m
+[31m-      - run: cargo clippy --all-targets -- -D warnings[m
+[31m-      - run: cargo test[m
+[31m-      # using singlethreaded testing for avm so that tests that change files do not conflict with each other[m
+[31m-      - run: cd avm && cargo fmt -- --check && cargo clippy --all-targets -- -D warnings && cargo test -- --test-threads=1[m
+[31m-      # Init local borsh package[m
+[31m-      - run: cd ts/packages/borsh && yarn --frozen-lockfile && yarn build[m
+[31m-      - run: cd ts/packages/anchor-errors && yarn --frozen-lockfile && yarn build[m
+[31m-      - run: cd ts/packages/anchor && yarn --frozen-lockfile[m
+[31m-      - run: cd ts/packages/anchor && yarn test[m
+[31m-      - run: cd ts/packages/anchor && yarn lint[m
+[31m-      - run: cd examples/tutorial && yarn --frozen-lockfile[m
+[31m-      - run: cd examples/tutorial && yarn lint[m
+[31m-      - run: cd tests && yarn --frozen-lockfile[m
+[31m-      - run: cd tests && yarn lint[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  setup-anchor-cli:[m
+[31m-    name: Setup Anchor cli[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache Cargo registry + index[m
+[31m-        id: cache-anchor[m
+[31m-        with:[m
+[31m-          path: ${{ env.CARGO_CACHE_PATH }}[m
+[31m-          key: cargo-${{ runner.os }}-${{ env.CARGO_PROFILE }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - run: cargo install --path cli anchor-cli --locked --force --debug[m
+[31m-        if: env.CARGO_PROFILE == 'debug'[m
+[31m-      - run: cargo install --path cli anchor-cli --locked --force[m
+[31m-        if: env.CARGO_PROFILE != 'debug'[m
+[31m-[m
+[31m-      - run: chmod +x ~/.cargo/bin/anchor[m
+[31m-      - uses: actions/upload-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  test-examples:[m
+[31m-    needs: setup-anchor-cli[m
+[31m-    name: Examples Test[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/[m
+[31m-      - run: chmod +rwx ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: ./.github/actions/setup-solana/[m
+[31m-      - uses: ./.github/actions/setup-ts/[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: basic-0 cache[m
+[31m-        id: cache-basic-0[m
+[31m-        with:[m
+[31m-          path: ./examples/tutorial/basic-0/target[m
+[31m-          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-0/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: basic-1 cache[m
+[31m-        id: cache-basic-1[m
+[31m-        with:[m
+[31m-          path: ./examples/tutorial/basic-1/target[m
+[31m-          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-1/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: basic-2 cache[m
+[31m-        id: cache-basic-2[m
+[31m-        with:[m
+[31m-          path: ./examples/tutorial/basic-2/target[m
+[31m-          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-2/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: basic-3 cache[m
+[31m-        id: cache-basic-3[m
+[31m-        with:[m
+[31m-          path: ./examples/tutorial/basic-3/target[m
+[31m-          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-3/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: basic-4 cache[m
+[31m-        id: cache-basic-4[m
+[31m-        with:[m
+[31m-          path: ./examples/tutorial/basic-4/target[m
+[31m-          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-4/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - run: cd examples/tutorial && yarn workspaces run test[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  setup-client-example:[m
+[31m-    needs: setup-anchor-cli[m
+[31m-    name: Setup Client Example Test[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    strategy:[m
+[31m-      fail-fast: false[m
+[31m-      matrix:[m
+[31m-        node:[m
+[31m-          - path: tests/optional/[m
+[31m-            name: optional.so[m
+[31m-          - path: tests/events/[m
+[31m-            name: events.so[m
+[31m-          - path: examples/tutorial/basic-4/[m
+[31m-            name: basic_4.so[m
+[31m-          - path: examples/tutorial/basic-2/[m
+[31m-            name: basic_2.so[m
+[31m-          - path: tests/composite/[m
+[31m-            name: composite.so[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: ./.github/actions/setup-solana/[m
+[31m-[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/[m
+[31m-      - run: chmod +rwx ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      - run: cd ${{ matrix.node.path }} && anchor build --skip-lint[m
+[31m-      - uses: actions/upload-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ matrix.node.name }}[m
+[31m-          path: ${{ matrix.node.path }}target/deploy/${{ matrix.node.name }}[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  test-client-example:[m
+[31m-    needs: setup-client-example[m
+[31m-    name: Client Example Test[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: ./.github/actions/setup-ts/[m
+[31m-[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/[m
+[31m-      - run: chmod +x ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: optional.so[m
+[31m-          path: tests/optional/target/deploy/[m
+[31m-      - uses: actions/download-artifact@v2[m
+[31m-        with:[m
+[31m-          name: events.so[m
+[31m-          path: tests/events/target/deploy/[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: basic_4.so[m
+[31m-          path: examples/tutorial/basic-4/target/deploy/[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: basic_2.so[m
+[31m-          path: examples/tutorial/basic-2/target/deploy/[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: composite.so[m
+[31m-          path: tests/composite/target/deploy/[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache client/example target[m
+[31m-        id: cache-test-target[m
+[31m-        with:[m
+[31m-          path: client/example/target[m
+[31m-          key: cargo-${{ runner.os }}-client/example-${{ env.ANCHOR_VERSION }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-      - uses: ./.github/actions/setup-solana/[m
+[31m-      - run: cd client/example && ./run-test.sh[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  test-bpf-upgradeable-state:[m
+[31m-    needs: setup-anchor-cli[m
+[31m-    name: Test tests/bpf-upgradeable-state[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: ./.github/actions/setup-ts/[m
+[31m-      - uses: ./.github/actions/setup-solana/[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache Cargo registry + index[m
+[31m-        id: cache-anchor[m
+[31m-        with:[m
+[31m-          path: ${{ env.CARGO_CACHE_PATH }}[m
+[31m-          key: cargo-${{ runner.os }}-${{ env.CARGO_PROFILE }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/[m
+[31m-      - run: chmod +x ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache tests/bpf-upgradeable-state target[m
+[31m-        id: cache-test-target[m
+[31m-        with:[m
+[31m-          path: tests/bpf-upgradeable-state/target[m
+[31m-          key: cargo-${{ runner.os }}-tests/bpf-upgradeable-state-${{ env.ANCHOR_VERSION }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - run: solana-test-validator -r --quiet &[m
+[31m-        name: start validator[m
+[31m-      - run: cd tests/bpf-upgradeable-state && yarn --frozen-lockfile[m
+[31m-      - run: cd tests/bpf-upgradeable-state[m
+[31m-      - run: cd tests/bpf-upgradeable-state && anchor build --skip-lint[m
+[31m-      - run: cd tests/bpf-upgradeable-state && solana program deploy --program-id program_with_different_programdata.json target/deploy/bpf_upgradeable_state.so[m
+[31m-      - run: cd tests/bpf-upgradeable-state && cp bpf_upgradeable_state-keypair.json target/deploy/bpf_upgradeable_state-keypair.json && anchor test --skip-local-validator --skip-build --skip-lint[m
+[31m-      - run: cd tests/bpf-upgradeable-state && npx tsc --noEmit[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  # # this test exists to make sure that anchor[m
+[31m-  # # checks rent correctly for legacy accounts[m
+[31m-  # # that don't have to be rent-exempt[m
+[31m-  # test-misc-non-rent-exempt:[m
+[31m-  #   # the anchor cli is built with a different solana version[m
+[31m-  #   # but that's fine since it's just the cli[m
+[31m-  #   needs: setup-anchor-cli[m
+[31m-  #   name: Test tests/misc/nonRentExempt[m
+[31m-  #   runs-on: ubuntu-latest[m
+[31m-  #   timeout-minutes: 30[m
+[31m-  #   steps:[m
+[31m-  #     - uses: actions/checkout@v3[m
+[31m-  #     - uses: ./.github/actions/setup/[m
+[31m-  #     - uses: ./.github/actions/setup-ts/[m
+[31m-  #     - uses: actions/cache@v3[m
+[31m-  #       name: Cache Solana Tool Suite[m
+[31m-  #       id: cache-solana[m
+[31m-  #       with:[m
+[31m-  #         path: |[m
+[31m-  #           ~/.cache/solana/[m
+[31m-  #           ~/.local/share/solana/[m
+[31m-  #         key: solana-${{ runner.os }}-v0000-1.8.14[m
+[31m-  #     # using an outdated validator but that[m
+[31m-  #     # is ok as long as the test doesn't[m
+[31m-  #     # include newer incompatible features[m
+[31m-  #     - run: sh -c "$(curl -sSfL https://release.solana.com/v1.8.14/install)"[m
+[31m-  #       shell: bash[m
+[31m-  #     - run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH[m
+[31m-  #       shell: bash[m
+[31m-  #     - run: solana-keygen new --no-bip39-passphrase[m
+[31m-  #       shell: bash[m
+[31m-  #     - run: solana config set --url localhost[m
+[31m-  #       shell: bash[m
+[31m-  #     - uses: actions/download-artifact@v3[m
+[31m-  #       with:[m
+[31m-  #         name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-  #         path: ~/.cargo/bin/[m
+[31m-  #     - run: chmod +x ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-  #     - uses: actions/cache@v3[m
+[31m-  #       name: Cache tests/misc target[m
+[31m-  #       id: cache-test-target[m
+[31m-  #       with:[m
+[31m-  #         path: tests/misc/target[m
+[31m-  #         key: cargo-${{ runner.os }}-tests/misc-${{ env.ANCHOR_VERSION }}-1.8.14-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-  #     - run: cd tests/misc && yarn --frozen-lockfile[m
+[31m-  #     - run: cd tests/misc[m
+[31m-  #     - run: cd tests/misc && chmod +x ci.sh && ./ci.sh[m
+[31m-  #     - run: cd tests/misc && anchor test --skip-lint[m
+[31m-[m
+[31m-  test-anchor-init:[m
+[31m-    needs: setup-anchor-cli[m
+[31m-    name: Test Anchor Init[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: ./.github/actions/setup-ts/[m
+[31m-      - uses: ./.github/actions/setup-solana/[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache Cargo registry + index[m
+[31m-        id: cache-anchor[m
+[31m-        with:[m
+[31m-          path: ${{ env.CARGO_CACHE_PATH }}[m
+[31m-          key: cargo-${{ runner.os }}-${{ env.CARGO_PROFILE }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/[m
+[31m-      - run: chmod +x ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      # TODO: Re-enable once https://github.com/solana-labs/solana/issues/33504 is resolved[m
+[31m-      # - run: cd "$(mktemp -d)" && anchor init hello-anchor && cd hello-anchor && yarn link @coral-xyz/anchor && yarn && anchor test && yarn lint:fix[m
+[31m-      # - uses: ./.github/actions/git-diff/[m
+[31m-[m
+[31m-  test-programs:[m
+[31m-    needs: setup-anchor-cli[m
+[31m-    name: Test ${{ matrix.node.path }}[m
+[31m-    runs-on: ubuntu-latest[m
+[31m-    timeout-minutes: 30[m
+[31m-    strategy:[m
+[31m-      fail-fast: false[m
+[31m-      matrix:[m
+[31m-        node:[m
+[31m-          - cmd: cd tests/sysvars && anchor test --skip-lint[m
+[31m-            path: tests/sysvars[m
+[31m-          - cmd: cd tests/composite && anchor test --skip-lint[m
+[31m-            path: tests/composite[m
+[31m-          - cmd: cd tests/errors && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/errors[m
+[31m-          - cmd: cd tests/spl/metadata && anchor test --skip-lint[m
+[31m-            path: spl/metadata[m
+[31m-          - cmd: cd tests/spl/token-proxy && anchor test --skip-lint[m
+[31m-            path: spl/token-proxy[m
+[31m-          - cmd: cd tests/spl/token-wrapper && anchor test --skip-lint[m
+[31m-            path: spl/token-wrapper[m
+[31m-          - cmd: cd tests/spl/transfer-hook && anchor test --skip-lint[m
+[31m-            path: spl/transfer-hook[m
+[31m-          - cmd: cd tests/spl/token-extensions && anchor test --skip-lint[m
+[31m-            path: spl/token-extensions[m
+[31m-          - cmd: cd tests/multisig && anchor test --skip-lint[m
+[31m-            path: tests/multisig[m
+[31m-          # - cmd: cd tests/lockup && anchor test --skip-lint[m
+[31m-          #   path: tests/lockup[m
+[31m-          # TODO: Remove `1.14.18` installation if/when https://github.com/solana-labs/solana/issues/31960 is solved[m
+[31m-          # `swap` tests don't work with Solana `1.16.0`, downgrade to `1.14.18`[m
+[31m-          - cmd: cd tests/swap/deps/openbook-dex/dex && solana-install init 1.14.18 && cargo build-bpf -- --locked && cd ../../../ && solana-install init $SOLANA_CLI_VERSION && anchor test --skip-lint[m
+[31m-            path: tests/swap[m
+[31m-          - cmd: cd tests/escrow && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/escrow[m
+[31m-          - cmd: cd tests/pyth && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/pyth[m
+[31m-          - cmd: cd tests/realloc && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/realloc[m
+[31m-          - cmd: cd tests/system-accounts && anchor test --skip-lint[m
+[31m-            path: tests/system-accounts[m
+[31m-          - cmd: cd tests/misc && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/misc[m
+[31m-          - cmd: cd tests/events && anchor test --skip-lint[m
+[31m-            path: tests/events[m
+[31m-          - cmd: cd tests/cashiers-check && anchor test --skip-lint[m
+[31m-            path: tests/cashiers-check[m
+[31m-          - cmd: cd tests/declare-id && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/declare-id[m
+[31m-          - cmd: cd tests/declare-program && anchor test --skip-lint[m
+[31m-            path: tests/declare-program[m
+[31m-          - cmd: cd tests/typescript && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/typescript[m
+[31m-          # zero-copy tests cause `/usr/bin/ld: final link failed: No space left on device`[m
+[31m-          # on GitHub runners. It is likely caused by `cargo test-sbf` since all other tests[m
+[31m-          # don't have this problem.[m
+[31m-          # TODO: Find a fix.[m
+[31m-          # - cmd: cd tests/zero-copy && anchor test --skip-lint && cd programs/zero-copy && cargo test-sbf[m
+[31m-          #   path: tests/zero-copy[m
+[31m-          - cmd: cd tests/chat && anchor test --skip-lint[m
+[31m-            path: tests/chat[m
+[31m-          - cmd: cd tests/ido-pool && anchor test --skip-lint[m
+[31m-            path: tests/ido-pool[m
+[31m-          # - cmd: cd tests/cfo && anchor run test-with-build && cd deps/stake && git checkout Cargo.lock && cd ../swap && git checkout Cargo.lock[m
+[31m-          #   path: tests/cfo[m
+[31m-          - cmd: cd tests/auction-house && anchor test --skip-lint[m
+[31m-            path: tests/auction-house[m
+[31m-          - cmd: cd tests/floats && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/floats[m
+[31m-          - cmd: cd tests/safety-checks && anchor run test[m
+[31m-            path: tests/safety-checks[m
+[31m-          - cmd: cd tests/custom-coder && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/custom-coder[m
+[31m-          - cmd: cd tests/validator-clone && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/validator-clone[m
+[31m-          - cmd: cd tests/cpi-returns && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/cpi-returns[m
+[31m-          - cmd: cd tests/multiple-suites && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/multiple-suites[m
+[31m-          - cmd: cd tests/multiple-suites-run-single && anchor test --skip-lint --run tests/should-run && npx tsc --noEmit[m
+[31m-            path: tests/multiple-suites-run-single[m
+[31m-          - cmd: cd tests/optional && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/optional[m
+[31m-          - cmd: cd tests/pda-derivation && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/pda-derivation[m
+[31m-          - cmd: cd tests/relations-derivation && anchor test --skip-lint && npx tsc --noEmit[m
+[31m-            path: tests/relations-derivation[m
+[31m-          - cmd: cd tests/anchor-cli-idl && ./test.sh[m
+[31m-            path: tests/anchor-cli-idl[m
+[31m-          - cmd: cd tests/anchor-cli-account && anchor test --skip-lint[m
+[31m-            path: tests/anchor-cli-account[m
+[31m-          - cmd: cd tests/bench && anchor test --skip-lint[m
+[31m-            path: tests/bench[m
+[31m-          - cmd: cd tests/idl && ./test.sh[m
+[31m-            path: tests/idl[m
+[31m-          # TODO: Enable when `solang` becomes compatible with the new IDL spec[m
+[31m-          # - cmd: cd tests/solang && anchor test[m
+[31m-          #   path: tests/solang[m
+[31m-    steps:[m
+[31m-      - uses: actions/checkout@v3[m
+[31m-      - uses: ./.github/actions/setup/[m
+[31m-      - uses: ./.github/actions/setup-ts/[m
+[31m-      - uses: ./.github/actions/setup-solana/[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache Cargo registry + index[m
+[31m-        id: cache-anchor[m
+[31m-        with:[m
+[31m-          path: ${{ env.CARGO_CACHE_PATH }}[m
+[31m-          key: cargo-${{ runner.os }}-${{ env.CARGO_PROFILE }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - uses: actions/download-artifact@v3[m
+[31m-        with:[m
+[31m-          name: ${{ env.ANCHOR_BINARY_NAME }}[m
+[31m-          path: ~/.cargo/bin/[m
+[31m-      - run: chmod +x ~/.cargo/bin/anchor[m
+[31m-[m
+[31m-      - uses: actions/cache@v3[m
+[31m-        if: ${{ env.CACHE != 'false' }}[m
+[31m-        name: Cache ${{ matrix.node.path }} target[m
+[31m-        id: cache-test-target[m
+[31m-        with:[m
+[31m-          path: ${{ matrix.node.path }}/target[m
+[31m-          key: cargo-${{ runner.os }}-${{ matrix.node.path }}-${{ env.ANCHOR_VERSION }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[31m-[m
+[31m-      - run: ${{ matrix.node.cmd }}[m
+[31m-        name: ${{ matrix.node.path }} program test[m
+[31m-[m
+[31m-      - uses: ./.github/actions/git-diff/[m
+[1mdiff --git a/.github/workflows/tests.yaml b/.github/workflows/tests.yaml[m
+[1mindex 56d6fa8a..d453b648 100644[m
+[1m--- a/.github/workflows/tests.yaml[m
+[1m+++ b/.github/workflows/tests.yaml[m
+[36m@@ -7,15 +7,429 @@[m [mon:[m
+   pull_request:[m
+     branches:[m
+       - master[m
+[32m+[m[32menv:[m
+[32m+[m[32m  SOLANA_CLI_VERSION: 1.9.13[m
+[32m+[m[32m  NODE_VERSION: 17.0.1[m
+ [m
+ jobs:[m
+[31m-  tests:[m
+[31m-    name: Reusable[m
+[31m-    uses: ./.github/workflows/reusable-tests.yaml[m
+[31m-    with:[m
+[31m-      cache: true[m
+[31m-      solana_cli_version: 1.18.17[m
+[31m-      solang_version: 0.3.2[m
+[31m-      node_version: 18.18.0[m
+[31m-      cargo_profile: debug[m
+[31m-      anchor_binary_name: anchor-binary[m
+[32m+[m[32m  test-core:[m
+[32m+[m[32m    name: Core Tests[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: actions/setup-node@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          node-version: ${{ env.NODE_VERSION }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Cargo registry + index[m
+[32m+[m[32m        id: cache-cargo-build[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cargo/bin/[m
+[32m+[m[32m            ~/.cargo/registry/index/[m
+[32m+[m[32m            ~/.cargo/registry/cache/[m
+[32m+[m[32m            ~/.cargo/git/db/[m
+[32m+[m[32m            ./target/[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - run: cargo build[m
+[32m+[m[32m      - run: cargo fmt -- --check[m
+[32m+[m[32m      - run: cargo clippy --all-targets -- -D warnings[m
+[32m+[m[32m      - run: cargo test[m
+[32m+[m[32m      # using singlethreaded testing for avm so that tests that change files do not conflict with each other[m
+[32m+[m[32m      - run: cd avm && cargo fmt -- --check && cargo clippy --all-targets -- -D warnings && cargo test -- --test-threads=1[m
+[32m+[m[32m      - run: cd ts && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd ts && yarn test[m
+[32m+[m[32m      - run: cd ts && yarn lint[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn lint[m
+[32m+[m[32m      - run: cd tests && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd tests && yarn lint[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  setup-anchor-cli:[m
+[32m+[m[32m    name: Setup Anchor cli[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Cargo registry + index[m
+[32m+[m[32m        id: cache-anchor[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cargo/bin/[m
+[32m+[m[32m            ~/.cargo/registry/index/[m
+[32m+[m[32m            ~/.cargo/registry/cache/[m
+[32m+[m[32m            ~/.cargo/git/db/[m
+[32m+[m[32m            ./target/[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - run: cargo install --path cli anchor-cli --locked --force[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m[32m      - uses: actions/upload-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-examples:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Examples Test[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +rwx ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: basic-0 cache[m
+[32m+[m[32m        id: cache-basic-0[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: ./examples/tutorial/basic-0/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-0/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: basic-1 cache[m
+[32m+[m[32m        id: cache-basic-1[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: ./examples/tutorial/basic-1/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-1/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: basic-2 cache[m
+[32m+[m[32m        id: cache-basic-2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: ./examples/tutorial/basic-2/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-2/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: basic-3 cache[m
+[32m+[m[32m        id: cache-basic-3[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: ./examples/tutorial/basic-3/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-3/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: basic-4 cache[m
+[32m+[m[32m        id: cache-basic-4[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: ./examples/tutorial/basic-4/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-${{ hashFiles('./examples/tutorial/basic-4/**/Cargo.toml') }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - run: cd examples/tutorial && yarn workspaces run test[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  setup-client-example:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Setup Client Example Test[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    strategy:[m
+[32m+[m[32m      fail-fast: false[m
+[32m+[m[32m      matrix:[m
+[32m+[m[32m        node:[m
+[32m+[m[32m          - path: tests/events/[m
+[32m+[m[32m            name: events.so[m
+[32m+[m[32m          - path: examples/tutorial/basic-4/[m
+[32m+[m[32m            name: basic_4.so[m
+[32m+[m[32m          - path: examples/tutorial/basic-2/[m
+[32m+[m[32m            name: basic_2.so[m
+[32m+[m[32m          - path: tests/composite/[m
+[32m+[m[32m            name: composite.so[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +rwx ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: cd ${{ matrix.node.path }} && anchor build --skip-lint[m
+[32m+[m[32m      - uses: actions/upload-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: ${{ matrix.node.name }}[m
+[32m+[m[32m          path: ${{ matrix.node.path }}target/deploy/${{ matrix.node.name }}[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-client-example:[m
+[32m+[m[32m    needs: setup-client-example[m
+[32m+[m[32m    name: Client Example Test[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: events.so[m
+[32m+[m[32m          path: tests/events/target/deploy/[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: basic_4.so[m
+[32m+[m[32m          path: examples/tutorial/basic-4/target/deploy/[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: basic_2.so[m
+[32m+[m[32m          path: examples/tutorial/basic-2/target/deploy/[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: composite.so[m
+[32m+[m[32m          path: tests/composite/target/deploy/[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache client/example target[m
+[32m+[m[32m        id: cache-test-target[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: client/example/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-client/example-${{ env.ANCHOR_VERSION }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m[32m      - run: cd client/example && ./run-test.sh[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-bpf-upgradeable-state:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test tests/bpf-upgradeable-state[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Cargo registry + index[m
+[32m+[m[32m        id: cache-anchor[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cargo/bin/[m
+[32m+[m[32m            ~/.cargo/registry/index/[m
+[32m+[m[32m            ~/.cargo/registry/cache/[m
+[32m+[m[32m            ~/.cargo/git/db/[m
+[32m+[m[32m            ./target/[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache tests/bpf-upgradeable-state target[m
+[32m+[m[32m        id: cache-test-target[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: tests/bpf-upgradeable-state/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-tests/bpf-upgradeable-state-${{ env.ANCHOR_VERSION }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m
+[32m+[m[32m      - run: solana-test-validator -r --quiet &[m
+[32m+[m[32m        name: start validator[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && anchor build --skip-lint[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && solana program deploy --program-id program_with_different_programdata.json target/deploy/bpf_upgradeable_state.so[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && cp bpf_upgradeable_state-keypair.json target/deploy/bpf_upgradeable_state-keypair.json && anchor test --skip-local-validator --skip-build --skip-lint[m
+[32m+[m[32m      - run: cd tests/bpf-upgradeable-state && npx tsc --noEmit[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  # this test exists to make sure that anchor[m
+[32m+[m[32m  # checks rent correctly for legacy accounts[m
+[32m+[m[32m  # that don't have to be rent-exempt[m
+[32m+[m[32m  test-misc-non-rent-exempt:[m
+[32m+[m[32m    # the anchor cli is built with a different solana version[m
+[32m+[m[32m    # but that's fine since it's just the cli[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test tests/misc/nonRentExempt[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Solana Tool Suite[m
+[32m+[m[32m        id: cache-solana[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cache/solana/[m
+[32m+[m[32m            ~/.local/share/solana/[m
+[32m+[m[32m          key: solana-${{ runner.os }}-v0000-1.8.14[m
+[32m+[m[32m      # using an outdated validator but that[m
+[32m+[m[32m      # is ok as long as the test doesn't[m
+[32m+[m[32m      # include newer incompatible features[m
+[32m+[m[32m      - run: sh -c "$(curl -sSfL https://release.solana.com/v1.8.14/install)"[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: solana-keygen new --no-bip39-passphrase[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - run: solana config set --url localhost[m
+[32m+[m[32m        shell: bash[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache tests/misc target[m
+[32m+[m[32m        id: cache-test-target[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: tests/misc/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-tests/misc-${{ env.ANCHOR_VERSION }}-1.8.14-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m
+[32m+[m[32m      - run: cd tests/misc && yarn --frozen-lockfile[m
+[32m+[m[32m      - run: cd tests/misc[m
+[32m+[m[32m      - run: cd tests/misc && chmod +x ci.sh && ./ci.sh[m
+[32m+[m[32m      - run: cd tests/misc && anchor test --skip-lint[m
+[32m+[m
+[32m+[m[32m  test-anchor-init:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test Anchor Init[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Cargo registry + index[m
+[32m+[m[32m        id: cache-anchor[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cargo/bin/[m
+[32m+[m[32m            ~/.cargo/registry/index/[m
+[32m+[m[32m            ~/.cargo/registry/cache/[m
+[32m+[m[32m            ~/.cargo/git/db/[m
+[32m+[m[32m            ./target/[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - run: cd "$(mktemp -d)" && anchor init hello-anchor && cd hello-anchor && yarn link @project-serum/anchor && yarn && anchor test && yarn lint:fix[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[32m+[m
+[32m+[m[32m  test-programs:[m
+[32m+[m[32m    needs: setup-anchor-cli[m
+[32m+[m[32m    name: Test ${{ matrix.node.path }}[m
+[32m+[m[32m    runs-on: ubuntu-18.04[m
+[32m+[m[32m    timeout-minutes: 30[m
+[32m+[m[32m    strategy:[m
+[32m+[m[32m      fail-fast: false[m
+[32m+[m[32m      matrix:[m
+[32m+[m[32m        node:[m
+[32m+[m[32m          - cmd: cd tests/sysvars && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/sysvars[m
+[32m+[m[32m          - cmd: cd tests/composite && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/composite[m
+[32m+[m[32m          - cmd: cd tests/errors && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/errors[m
+[32m+[m[32m          - cmd: cd tests/spl/token-proxy && anchor test --skip-lint[m
+[32m+[m[32m            path: spl/token-proxy[m
+[32m+[m[32m          - cmd: cd tests/multisig && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/multisig[m
+[32m+[m[32m          - cmd: cd tests/interface && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/interface[m
+[32m+[m[32m          - cmd: cd tests/lockup && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/lockup[m
+[32m+[m[32m          - cmd: cd tests/swap/deps/serum-dex/dex && cargo build-bpf -- --locked && cd ../../../ && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/swap[m
+[32m+[m[32m          - cmd: cd tests/escrow && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/escrow[m
+[32m+[m[32m          - cmd: cd tests/pyth && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/pyth[m
+[32m+[m[32m          - cmd: cd tests/system-accounts && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/system-accounts[m
+[32m+[m[32m          - cmd: cd tests/misc && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/misc[m
+[32m+[m[32m          - cmd: cd tests/events && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/events[m
+[32m+[m[32m          - cmd: cd tests/cashiers-check && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/cashiers-check[m
+[32m+[m[32m          - cmd: cd tests/declare-id && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/declare-id[m
+[32m+[m[32m          - cmd: cd tests/typescript && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/typescript[m
+[32m+[m[32m          - cmd: cd tests/zero-copy && anchor test --skip-lint && cd programs/zero-copy && cargo test-bpf[m
+[32m+[m[32m            path: tests/zero-copy[m
+[32m+[m[32m          - cmd: cd tests/chat && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/chat[m
+[32m+[m[32m          - cmd: cd tests/ido-pool && anchor test --skip-lint[m
+[32m+[m[32m            path: tests/ido-pool[m
+[32m+[m[32m          - cmd: cd tests/cfo && anchor run test-with-build && cd deps/stake && git checkout Cargo.lock && cd ../swap && git checkout Cargo.lock[m
+[32m+[m[32m            path: tests/cfo[m
+[32m+[m[32m          - cmd: cd tests/auction-house && yarn --frozen-lockfile && anchor test --skip-lint && git checkout Cargo.lock[m
+[32m+[m[32m            path: tests/auction-house[m
+[32m+[m[32m          - cmd: cd tests/floats && yarn --frozen-lockfile && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/floats[m
+[32m+[m[32m          - cmd: cd tests/safety-checks && anchor run test[m
+[32m+[m[32m            path: tests/safety-checks[m
+[32m+[m[32m          - cmd: cd tests/custom-coder && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/custom-coder[m
+[32m+[m[32m          - cmd: cd tests/validator-clone && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/validator-clone[m
+[32m+[m[32m          - cmd: cd tests/cpi-returns && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/cpi-returns[m
+[32m+[m[32m          - cmd: cd tests/multiple-suites && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/multiple-suites[m
+[32m+[m[32m          - cmd: cd tests/pda-derivation && anchor test --skip-lint && npx tsc --noEmit[m
+[32m+[m[32m            path: tests/pda-derivation[m
+[32m+[m[32m          - cmd: cd tests/anchor-cli-idl && ./test.sh[m
+[32m+[m[32m            path: tests/anchor-cli-idl[m
+[32m+[m[32m    steps:[m
+[32m+[m[32m      - uses: actions/checkout@v2[m
+[32m+[m[32m      - uses: ./.github/actions/setup/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-ts/[m
+[32m+[m[32m      - uses: ./.github/actions/setup-solana/[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache Cargo registry + index[m
+[32m+[m[32m        id: cache-anchor[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: |[m
+[32m+[m[32m            ~/.cargo/bin/[m
+[32m+[m[32m            ~/.cargo/registry/index/[m
+[32m+[m[32m            ~/.cargo/registry/cache/[m
+[32m+[m[32m            ~/.cargo/git/db/[m
+[32m+[m[32m            ./target/[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-anchor-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m
+[32m+[m[32m      - uses: actions/download-artifact@v2[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          name: anchor-binary[m
+[32m+[m[32m          path: ~/.cargo/bin/[m
+[32m+[m[32m      - run: chmod +x ~/.cargo/bin/anchor[m
+[32m+[m
+[32m+[m[32m      - uses: actions/cache@v2[m
+[32m+[m[32m        name: Cache ${{ matrix.node.path }} target[m
+[32m+[m[32m        id: cache-test-target[m
+[32m+[m[32m        with:[m
+[32m+[m[32m          path: ${{ matrix.node.path }}/target[m
+[32m+[m[32m          key: cargo-${{ runner.os }}-${{ matrix.node.path }}-${{ env.ANCHOR_VERSION }}-${{ env.SOLANA_CLI_VERSION }}-${{ hashFiles('**/Cargo.lock') }}[m
+[32m+[m
+[32m+[m[32m      - run: ${{ matrix.node.cmd }}[m
+[32m+[m[32m        name: ${{ matrix.node.path }} program test[m
+[32m+[m
+[32m+[m[32m      - uses: ./.github/actions/git-diff/[m
+[1mdiff --git a/.gitignore b/.gitignore[m
+[1mindex 18671740..11da7f1f 100644[m
+[1m--- a/.gitignore[m
+[1m+++ b/.gitignore[m
+[36m@@ -10,7 +10,6 @@[m [mtarget/[m
+ test-ledger[m
+ examples/*/Cargo.lock[m
+ examples/**/Cargo.lock[m
+[31m-*/example/Cargo.lock[m
+ tests/*/Cargo.lock[m
+ tests/**/Cargo.lock[m
+ tests/*/yarn.lock[m
+[36m@@ -22,6 +21,3 @@[m [mcli/npm-package/anchor[m
+ cli/npm-package/*.tgz[m
+ docker-target[m
+ .rollup.cache/[m
+[31m-test-keypair.json[m
+[31m-tsconfig.tsbuildinfo[m
+[31m-.vscode[m
+[1mdiff --git a/.gitmodules b/.gitmodules[m
+[1mindex c4887b4a..ec5d6737 100644[m
+[1m--- a/.gitmodules[m
+[1m+++ b/.gitmodules[m
+[36m@@ -1,9 +1,9 @@[m
+[31m-[submodule "examples/swap/deps/openbook-dex"][m
+[31m-	path = tests/swap/deps/openbook-dex[m
+[31m-	url = https://github.com/openbook-dex/program[m
+[31m-[submodule "examples/cfo/deps/openbook-dex"][m
+[31m-	path = tests/cfo/deps/openbook-dex[m
+[31m-	url = https://github.com/openbook-dex/program[m
+[32m+[m[32m[submodule "examples/swap/deps/serum-dex"][m
+[32m+[m	[32mpath = tests/swap/deps/serum-dex[m
+[32m+[m	[32murl = https://github.com/project-serum/serum-dex[m
+[32m+[m[32m[submodule "examples/cfo/deps/serum-dex"][m
+[32m+[m	[32mpath = tests/cfo/deps/serum-dex[m
+[32m+[m	[32murl = https://github.com/project-serum/serum-dex[m
+ [submodule "examples/cfo/deps/swap"][m
+ 	path = tests/cfo/deps/swap[m
+ 	url = https://github.com/project-serum/swap.git[m
+[36m@@ -12,3 +12,10 @@[m
+ 	path = tests/cfo/deps/stake[m
+ 	url = https://github.com/project-serum/stake.git[m
+ 	branch = armani/cfo[m
+[32m+[m[32m[submodule "examples/permissioned-markets/deps/serum-dex"][m
+[32m+[m	[32mpath = tests/permissioned-markets/deps/serum-dex[m
+[32m+[m	[32murl = https://github.com/project-serum/serum-dex[m
+[32m+[m[32m[submodule "tests/auction-house"][m
+[32m+[m	[32mpath = tests/auction-house[m
+[32m+[m	[32murl = https://github.com/armaniferrante/auction-house[m
+[32m+[m	[32mbranch = armani/pda[m
+[1mdiff --git a/CHANGELOG.md b/CHANGELOG.md[m
+[1mindex 8fc408df..38286293 100644[m
+[1m--- a/CHANGELOG.md[m
+[1m+++ b/CHANGELOG.md[m
+[36m@@ -12,950 +12,597 @@[m [mThe minor version will be incremented upon a breaking change and the patch versi[m
+ [m
+ ### Features[m
+ [m
+[31m-- ts: Add optional `commitment` parameter to `Program.addEventListener` ([#3052](https://github.com/coral-xyz/anchor/pull/3052)).[m
+[31m-- cli, idl: Pass `cargo` args to IDL generation when building program or IDL ([#3059](https://github.com/coral-xyz/anchor/pull/3059)).[m
+[31m-- cli: Add checks for incorrect usage of `idl-build` feature ([#3061](https://github.com/coral-xyz/anchor/pull/3061)).[m
+[31m-- lang: Export `Discriminator` trait from `prelude` ([#3075](https://github.com/coral-xyz/anchor/pull/3075)).[m
+[32m+[m[32m* cli: Add `--program-keypair` to `anchor deploy` ([#1786](https://github.com/project-serum/anchor/pull/1786)).[m
+[32m+[m[32m* spl: Add more derived traits to `TokenAccount` to `Mint` ([#1818](https://github.com/project-serum/anchor/pull/1818)).[m
+[32m+[m[32m* cli: Add compilation optimizations to cli template ([#1807](https://github.com/project-serum/anchor/pull/1807)).[m
+[32m+[m[32m* cli: `build` now adds docs to idl. This can be turned off with `--no-docs` ([#1561](https://github.com/project-serum/anchor/pull/1561)).[m
+[32m+[m[32m* lang: Add `PartialEq` and `Eq` for `anchor_lang::Error` ([#1544](https://github.com/project-serum/anchor/pull/1544)).[m
+[32m+[m[32m* cli: Add `b` and `t` aliases for `build` and `test` respectively ([#1823](https://github.com/project-serum/anchor/pull/1823)).[m
+[32m+[m[32m* spl: Add `sync_native` token program CPI wrapper function ([#1833](https://github.com/project-serum/anchor/pull/1833)).[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- idl: Make safety comment checks fail silently when program path env is not set ([#3045](https://github.com/coral-xyz/anchor/pull/3045)).[m
+[31m-- idl: Avoid interference from rust tests during IDL generation ([#3058](https://github.com/coral-xyz/anchor/pull/3058)).[m
+[31m-- lang: Fix `align` repr support in `declare-program!` ([#3056](https://github.com/coral-xyz/anchor/pull/3056)).[m
+[31m-- lang: Make stack frames slimmer on ATA creation ([#3065](https://github.com/coral-xyz/anchor/pull/3065)).[m
+[31m-- lang: Remove `getrandom` dependency ([#3072](https://github.com/coral-xyz/anchor/pull/3072)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- syn: Remove `bpf` target support in `hash` feature ([#3078](https://github.com/coral-xyz/anchor/pull/3078)).[m
+[31m-- client: Add `tokio` support to `RequestBuilder` with `async` feature ([#3057](https://github.com/coral-xyz/anchor/pull/3057])).[m
+[31m-[m
+[31m-## [0.30.1] - 2024-06-20[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- idl: Allow overriding the idl build toolchain with the `RUSTUP_TOOLCHAIN` environment variable ([#2941](https://github.com/coral-xyz/anchor/pull/2941])).[m
+[31m-- avm: Support customizing the installation location using `AVM_HOME` environment variable ([#2917](https://github.com/coral-xyz/anchor/pull/2917)).[m
+[31m-- avm: Optimize `avm list` when GitHub API rate limits are reached ([#2962](https://github.com/coral-xyz/anchor/pull/2962))[m
+[31m-- idl, ts: Add accounts resolution for associated token accounts ([#2927](https://github.com/coral-xyz/anchor/pull/2927)).[m
+[31m-- cli: Add `--no-install` option to the `init` command ([#2945](https://github.com/coral-xyz/anchor/pull/2945)).[m
+[31m-- lang: Implement `TryFromIntError` for `Error` to be able to propagate integer conversion errors ([#2950](https://github.com/coral-xyz/anchor/pull/2950)).[m
+[31m-- idl: Add ability to convert legacy IDLs ([#2986](https://github.com/coral-xyz/anchor/pull/2986)).[m
+[31m-- ts: Extract Anchor error codes into their own package ([#2983](https://github.com/coral-xyz/anchor/pull/2983)).[m
+[31m-- cli: Add additional solana arguments to the `upgrade` command ([#2998](https://github.com/coral-xyz/anchor/pull/2998)).[m
+[31m-- spl: Export `spl-associated-token-account` crate ([#2999](https://github.com/coral-xyz/anchor/pull/2999)).[m
+[31m-- lang: Support legacy IDLs with `declare_program!` ([#2997](https://github.com/coral-xyz/anchor/pull/2997)).[m
+[31m-- cli: Add `idl convert` command ([#3009](https://github.com/coral-xyz/anchor/pull/3009)).[m
+[31m-- cli: Add `idl type` command ([#3017](https://github.com/coral-xyz/anchor/pull/3017)).[m
+[31m-- lang: Add `anchor_lang::pubkey` macro for declaring `Pubkey` const values ([#3021](https://github.com/coral-xyz/anchor/pull/3021)).[m
+[31m-- cli: Sync program ids on the initial build ([#3023](https://github.com/coral-xyz/anchor/pull/3023)).[m
+[31m-- idl: Remove `anchor-syn` dependency ([#3030](https://github.com/coral-xyz/anchor/pull/3030)).[m
+[31m-- lang: Add `const` of program ID to `declare_id!` and `declare_program!` ([#3019](https://github.com/coral-xyz/anchor/pull/3019)).[m
+[31m-- idl: Add separate spec crate ([#3036](https://github.com/coral-xyz/anchor/pull/3036)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- lang: Eliminate variable allocations that build up stack space for token extension code generation ([#2913](https://github.com/coral-xyz/anchor/pull/2913)).[m
+[31m-- ts: Fix incorrect `maxSupportedTransactionVersion` in `AnchorProvider.send*()` methods ([#2922](https://github.com/coral-xyz/anchor/pull/2922)).[m
+[31m-- cli: Use npm's configured default license for new projects made with `anchor init` ([#2929](https://github.com/coral-xyz/anchor/pull/2929)).[m
+[31m-- cli: add filename to 'Unable to read keypair file' errors ([#2932](https://github.com/coral-xyz/anchor/pull/2932)).[m
+[31m-- idl: Fix path resolution of the `Cargo.lock` of the project when generating idls for external types ([#2946](https://github.com/coral-xyz/anchor/pull/2946)).[m
+[31m-- idl: Fix potential panic on external type resolution ([#2954](https://github.com/coral-xyz/anchor/pull/2954)).[m
+[31m-- lang: Fix using defined types in instruction parameters with `declare_program!` ([#2959](https://github.com/coral-xyz/anchor/pull/2959)).[m
+[31m-- lang: Fix using const generics with `declare_program!` ([#2965](https://github.com/coral-xyz/anchor/pull/2965)).[m
+[31m-- lang: Fix using `Vec<u8>` type with `declare_program!` ([#2966](https://github.com/coral-xyz/anchor/pull/2966)).[m
+[31m-- lang: Fix `ProgramError::ArithmeticOverflow` not found error ([#2975](https://github.com/coral-xyz/anchor/pull/2975)).[m
+[31m-- lang: Fix using optional accounts with `declare_program!` ([#2967](https://github.com/coral-xyz/anchor/pull/2967)).[m
+[31m-- lang: Fix instruction return type generation with `declare_program!` ([#2977](https://github.com/coral-xyz/anchor/pull/2977)).[m
+[31m-- cli: Fix IDL write getting corrupted from retries ([#2964](https://github.com/coral-xyz/anchor/pull/2964)).[m
+[31m-- idl: Fix `unexpected_cfgs` build warning ([#2992](https://github.com/coral-xyz/anchor/pull/2992)).[m
+[31m-- lang: Make tuple struct fields public in `declare_program!` ([#2994](https://github.com/coral-xyz/anchor/pull/2994)).[m
+[31m-- Remove `rust-version` from crate manifests ([#3000](https://github.com/coral-xyz/anchor/pull/3000)).[m
+[31m-- cli: Fix upgradeable program clones ([#3010](https://github.com/coral-xyz/anchor/pull/3010)).[m
+[31m-- ts: Fix using IDLs that have defined types as generic arguments ([#3016](https://github.com/coral-xyz/anchor/pull/3016)).[m
+[31m-- idl: Fix generation with unsupported expressions ([#3033](https://github.com/coral-xyz/anchor/pull/3033)).[m
+[31m-- idl: Fix using `address` constraint with field expressions ([#3034](https://github.com/coral-xyz/anchor/pull/3034)).[m
+[31m-- lang: Fix using `bytemuckunsafe` account serialization with `declare_program!` ([#3037](https://github.com/coral-xyz/anchor/pull/3037)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-## [0.30.0] - 2024-04-15[m
+[31m-[m
+[31m-See the [Anchor 0.30 release notes](https://www.anchor-lang.com/release-notes/0.30.0) for a high-level overview of how to update.[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- cli: Allow force `init` and `new` ([#2698](https://github.com/coral-xyz/anchor/pull/2698)).[m
+[31m-- cli: Add verifiable option when `deploy` ([#2705](https://github.com/coral-xyz/anchor/pull/2705)).[m
+[31m-- cli: Add support for passing arguments to the underlying `solana program deploy` command with `anchor deploy` ([#2709](https://github.com/coral-xyz/anchor/pull/2709)).[m
+[31m-- lang: Add `InstructionData::write_to` implementation ([#2733](https://github.com/coral-xyz/anchor/pull/2733)).[m
+[31m-- lang: Add `#[interface(..)]` attribute for instruction discriminator overrides ([#2728](https://github.com/coral-xyz/anchor/pull/2728)).[m
+[31m-- ts: Add `.interface(..)` method for instruction discriminator overrides ([#2728](https://github.com/coral-xyz/anchor/pull/2728)).[m
+[31m-- cli: Check `anchor-lang` and CLI version compatibility ([#2753](https://github.com/coral-xyz/anchor/pull/2753)).[m
+[31m-- ts: Add missing IDL PDA seed types ([#2752](https://github.com/coral-xyz/anchor/pull/2752)).[m
+[31m-- cli: `idl close` accepts optional `--idl-address` parameter ([#2760](https://github.com/coral-xyz/anchor/pull/2760)).[m
+[31m-- cli: Add support for simple wildcard patterns in Anchor.toml's `workspace.members` and `workspace.exclude`. ([#2785](https://github.com/coral-xyz/anchor/pull/2785)).[m
+[31m-- cli: Add `--test-template` option for `init` command ([#2805](https://github.com/coral-xyz/anchor/pull/2805)).[m
+[31m-- cli: `anchor test` is able to run multiple commands ([#2799](https://github.com/coral-xyz/anchor/pull/2799)).[m
+[31m-- cli: Check `@coral-xyz/anchor` package and CLI version compatibility ([#2813](https://github.com/coral-xyz/anchor/pull/2813)).[m
+[31m-- cli: Accept package name as program name ([#2816](https://github.com/coral-xyz/anchor/pull/2816)).[m
+[31m-- cli: Add ability to build and test only a specified program ([#2823](https://github.com/coral-xyz/anchor/pull/2823)).[m
+[31m-- idl: Add new IDL spec ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl: Add support for `repr`s ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl: Add support for expression evaluation ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl: Add support for using external types when generating the IDL ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl, ts: Add unit and tuple struct support ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl, ts: Add generics support ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: Add `accountsPartial` method to keep the old `accounts` method behavior ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: Make `opts` parameter of `AnchorProvider` constructor optional ([#2843](https://github.com/coral-xyz/anchor/pull/2843)).[m
+[31m-- cli: Add `--no-idl` flag to the `build` command ([#2847](https://github.com/coral-xyz/anchor/pull/2847)).[m
+[31m-- cli: Add priority fees to idl commands ([#2845](https://github.com/coral-xyz/anchor/pull/2845)).[m
+[31m-- ts: Add `prepend` option to MethodBuilder `preInstructions` method ([#2863](https://github.com/coral-xyz/anchor/pull/2863)).[m
+[31m-- lang: Add `declare_program!` macro ([#2857](https://github.com/coral-xyz/anchor/pull/2857)).[m
+[31m-- cli: Add `deactivate_feature` flag to `solana-test-validator` config in Anchor.toml ([#2872](https://github.com/coral-xyz/anchor/pull/2872)).[m
+[31m-- idl: Add `docs` field for constants ([#2887](https://github.com/coral-xyz/anchor/pull/2887)).[m
+[31m-- idl: Store deployment addresses for other clusters ([#2892](https://github.com/coral-xyz/anchor/pull/2892)).[m
+[31m-- lang: Add `Event` utility type to get events from bytes ([#2897](https://github.com/coral-xyz/anchor/pull/2897)).[m
+[31m-- lang, spl: Add support for [token extensions](https://solana.com/solutions/token-extensions) ([#2789](https://github.com/coral-xyz/anchor/pull/2789)).[m
+[31m-- lang: Return overflow error from `Lamports` trait operations ([#2907](https://github.com/coral-xyz/anchor/pull/2907)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- syn: Add missing `new_from_array` method to `Hash` ([#2682](https://github.com/coral-xyz/anchor/pull/2682)).[m
+[31m-- cli: Switch to Cargo feature resolver(`resolver = "2"`) ([#2676](https://github.com/coral-xyz/anchor/pull/2676)).[m
+[31m-- cli: Fix using user specific path for `provider.wallet` in `Anchor.toml` ([#2696](https://github.com/coral-xyz/anchor/pull/2696)).[m
+[31m-- syn: Fix IDL constant seeds parsing ([#2699](https://github.com/coral-xyz/anchor/pull/2699)).[m
+[31m-- cli: Display errors if toolchain override restoration fails ([#2700](https://github.com/coral-xyz/anchor/pull/2700)).[m
+[31m-- cli: Fix commit based `anchor_version` override ([#2704](https://github.com/coral-xyz/anchor/pull/2704)).[m
+[31m-- spl: Fix compilation with `shmem` feature enabled ([#2722](https://github.com/coral-xyz/anchor/pull/2722)).[m
+[31m-- cli: Localhost default test validator address changes from `localhost` to `127.0.0.1`, NodeJS 17 IP resolution changes for IPv6 ([#2725](https://github.com/coral-xyz/anchor/pull/2725)).[m
+[31m-- lang: Eliminate temporary Vec allocations when serializing data with discriminant and set the default capacity to 256 bytes ([#2691](https://github.com/coral-xyz/anchor/pull/2691)).[m
+[31m-- lang: Allow custom lifetime in Accounts structure ([#2741](https://github.com/coral-xyz/anchor/pull/2741)).[m
+[31m-- lang: Remove `try_to_vec` usage while setting the return data in order to reduce heap memory usage ([#2744](https://github.com/coral-xyz/anchor/pull/2744))[m
+[31m-- cli: Show installation progress if Solana tools are not installed when using toolchain overrides ([#2757](https://github.com/coral-xyz/anchor/pull/2757)).[m
+[31m-- ts: Fix formatting enums ([#2763](https://github.com/coral-xyz/anchor/pull/2763)).[m
+[31m-- cli: Fix `migrate` command not working without global `ts-node` installation ([#2767](https://github.com/coral-xyz/anchor/pull/2767)).[m
+[31m-- client, lang, spl, syn: Enable all features for docs.rs build ([#2774](https://github.com/coral-xyz/anchor/pull/2774)).[m
+[31m-- ts: Fix construction of field layouts for type aliased instruction arguments ([#2821](https://github.com/coral-xyz/anchor/pull/2821))[m
+[31m-- idl: Fix IDL ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl, ts: Make casing consistent ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: Fix not being able to use numbers in instruction, account, or event names in some cases due to case conversion ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- cli: Fix excessive test validator requests ([#2828](https://github.com/coral-xyz/anchor/pull/2828)).[m
+[31m-- client: Fix `parse_logs_response` to prevent panics when more than 1 outer instruction exists in logs ([#2856](https://github.com/coral-xyz/anchor/pull/2856)).[m
+[31m-- avm, cli: Fix `stdsimd` feature compilation error from `ahash` when installing the CLI using newer Rust versions ([#2867](https://github.com/coral-xyz/anchor/pull/2867)).[m
+[31m-- spl: Fix not being able to deserialize newer token 2022 extensions ([#2876](https://github.com/coral-xyz/anchor/pull/2876)).[m
+[31m-- spl: Remove `solana-program` dependency ([#2900](https://github.com/coral-xyz/anchor/pull/2900)).[m
+[31m-- spl: Make `TokenAccount` and ` Mint` `Copy` ([#2904](https://github.com/coral-xyz/anchor/pull/2904)).[m
+[31m-- ts: Add missing errors ([#2906](https://github.com/coral-xyz/anchor/pull/2906)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- cli: Make `cargo build-sbf` the default build command ([#2694](https://github.com/coral-xyz/anchor/pull/2694)).[m
+[31m-- cli: Require explicit `overflow-checks` flag ([#2716](https://github.com/coral-xyz/anchor/pull/2716)).[m
+[31m-- ts: Remove `anchor-deprecated-state` feature ([#2717](https://github.com/coral-xyz/anchor/pull/2717)).[m
+[31m-- lang: Remove `CLOSED_ACCOUNT_DISCRIMINATOR` ([#2726](https://github.com/coral-xyz/anchor/pull/2726)).[m
+[31m-- lang: Make bumps of optional accounts `Option<u8>` rather than `u8` ([#2730](https://github.com/coral-xyz/anchor/pull/2730)).[m
+[31m-- spl: Remove `shared-memory` program ([#2747](https://github.com/coral-xyz/anchor/pull/2747)).[m
+[31m-- ts: Remove `associated`, `account.associated` and `account.associatedAddress` methods ([#2749](https://github.com/coral-xyz/anchor/pull/2749)).[m
+[31m-- cli: `idl upgrade` command closes the IDL buffer account ([#2760](https://github.com/coral-xyz/anchor/pull/2760)).[m
+[31m-- cli: Remove `--jest` option from the `init` command ([#2805](https://github.com/coral-xyz/anchor/pull/2805)).[m
+[31m-- cli: Require `idl-build` feature in program `Cargo.toml` ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- cli: Rename `seeds` feature to `resolution` and make it enabled by default ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- cli: Remove `idl parse` command ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- idl: Change IDL spec ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- syn: Remove `idl-parse` and `seeds` features ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: Change `accounts` method to no longer accept resolvable accounts ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: `Program` instances use camelCase for everything ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: Remove discriminator functions ([#2824](https://github.com/coral-xyz/anchor/pull/2824)).[m
+[31m-- ts: Remove `programId` parameter of the `Program` constructor ([#2864](https://github.com/coral-xyz/anchor/pull/2864)).[m
+[31m-- idl, syn: Move IDL types from the `anchor-syn` crate to the new IDL crate ([#2882](https://github.com/coral-xyz/anchor/pull/2882)).[m
+[31m-- idl: Add `#[non_exhaustive]` to IDL enums ([#2890](https://github.com/coral-xyz/anchor/pull/2890)).[m
+[31m-[m
+[31m-## [0.29.0] - 2023-10-16[m
+[31m-[m
+[31m-See the [Anchor 0.29 release notes](https://www.anchor-lang.com/release-notes/0.29.0) for a high-level overview of how to update.[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- lang: Change all accounts to have a reference to `AccountInfo` ([#2656](https://github.com/coral-xyz/anchor/pull/2656)).[m
+[31m-- lang: Add `get_lamports`, `add_lamports` and `sub_lamports` methods for all account types ([#2552](https://github.com/coral-xyz/anchor/pull/2552)).[m
+[31m-- client: Add a helper struct `DynSigner` to simplify use of `Client<C> where <C: Clone + Deref<Target = impl Signer>>` with Solana clap CLI utils that loads `Signer` as `Box<dyn Signer>` ([#2550](https://github.com/coral-xyz/anchor/pull/2550)).[m
+[31m-- lang: Allow CPI calls matching an interface without pinning program ID ([#2559](https://github.com/coral-xyz/anchor/pull/2559)).[m
+[31m-- cli, lang: Add IDL generation through compilation. `anchor build` still uses parsing method to generate IDLs, use `anchor idl build` to generate IDLs with the build method ([#2011](https://github.com/coral-xyz/anchor/pull/2011)).[m
+[31m-- avm: Add support for the `.anchorversion` file to facilitate switching between different versions of the `anchor-cli` ([#2553](https://github.com/coral-xyz/anchor/pull/2553)).[m
+[31m-- ts: Add ability to access workspace programs independent of the casing used, e.g. `anchor.workspace.myProgram`, `anchor.workspace.MyProgram`... ([#2579](https://github.com/coral-xyz/anchor/pull/2579)).[m
+[31m-- bench: Add benchmarking for program binary size ([#2591](https://github.com/coral-xyz/anchor/pull/2591)).[m
+[31m-- spl: Export `mpl-token-metadata` crate ([#2583](https://github.com/coral-xyz/anchor/pull/2583)).[m
+[31m-- spl: Add `TokenRecordAccount` for pNFTs ([#2597](https://github.com/coral-xyz/anchor/pull/2597)).[m
+[31m-- ts: Add support for unnamed(tuple) enum in accounts ([#2601](https://github.com/coral-xyz/anchor/pull/2601)).[m
+[31m-- cli: Add program template with multiple files for instructions, state... ([#2602](https://github.com/coral-xyz/anchor/pull/2602)).[m
+[31m-- bench: Add benchmarking for stack memory usage ([#2617](https://github.com/coral-xyz/anchor/pull/2617)).[m
+[31m-- lang: `Box` the inner enums of `anchor_lang::error::Error` to optimize `anchor_lang::Result` ([#2600](https://github.com/coral-xyz/anchor/pull/2600)).[m
+[31m-- ts: Add strong type support for `Program.addEventListener` method ([#2627](https://github.com/coral-xyz/anchor/pull/2627)).[m
+[31m-- syn: Add `IdlBuild` trait to implement IDL support for custom types ([#2629](https://github.com/coral-xyz/anchor/pull/2629)).[m
+[31m-- spl: Add `idl-build` feature. IDL build method will not work without enabling this feature when using `anchor-spl` ([#2629](https://github.com/coral-xyz/anchor/pull/2629)).[m
+[31m-- lang: Add support for type aliases in IDLs ([#2637](https://github.com/coral-xyz/anchor/pull/2637)).[m
+[31m-- cli: Add `test.upgradeable`, `test.genesis.upgradeable` setting in `Anchor.toml` to support testing upgradeable programs ([#2642](https://github.com/coral-xyz/anchor/pull/2642)).[m
+[31m-- cli, client, lang, spl: Update Solana toolchain and dependencies to `1.17.0`, `1.16` remains supported ([#2645](https://github.com/coral-xyz/anchor/pull/2645)).[m
+[31m-- spl: Add support for memo program ([#2661](https://github.com/coral-xyz/anchor/pull/2661)).[m
+[31m-- avm: Add `anchor-cli` installation from commit ([#2659](https://github.com/coral-xyz/anchor/pull/2659)).[m
+[31m-- cli: Add `toolchain` property in `Anchor.toml` to override Anchor and Solana versions ([#2649](https://github.com/coral-xyz/anchor/pull/2649)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- ts: Packages no longer depend on `assert` ([#2535](https://github.com/coral-xyz/anchor/pull/2535)).[m
+[31m-- lang: Support for `const` in the `InitSpace` macro ([#2555](https://github.com/coral-xyz/anchor/pull/2555)).[m
+[31m-- cli: Support workspace inheritance ([#2570](https://github.com/coral-xyz/anchor/pull/2570)).[m
+[31m-- client: Compile with Solana `1.14` ([#2572](https://github.com/coral-xyz/anchor/pull/2572)).[m
+[31m-- cli: Fix `anchor build --no-docs` adding docs to the IDL ([#2575](https://github.com/coral-xyz/anchor/pull/2575)).[m
+[31m-- ts: Load workspace programs on-demand rather than loading all of them at once ([#2579](https://github.com/coral-xyz/anchor/pull/2579)).[m
+[31m-- lang: Fix `associated_token::token_program` constraint ([#2603](https://github.com/coral-xyz/anchor/pull/2603)).[m
+[31m-- cli: Fix `anchor account` command panicking outside of workspace ([#2620](https://github.com/coral-xyz/anchor/pull/2620)).[m
+[31m-- lang: IDL named enum variant fields are now camelCase as opposed to snake_case, consistent with the other IDL types ([#2633](https://github.com/coral-xyz/anchor/pull/2633)).[m
+[31m-- avm: Remove excessive panics and handle the errors gracefully ([#2671](https://github.com/coral-xyz/anchor/pull/2671)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- lang: Switch to type safe bumps in context ([#2542](https://github.com/coral-xyz/anchor/pull/2542)).[m
+[31m-- syn: `idl` feature has been replaced with `idl-build`, `idl-parse` and `idl-types` features ([#2011](https://github.com/coral-xyz/anchor/pull/2011)).[m
+[31m-- syn: IDL `parse` method now returns `Result<Idl>` instead of `Result<Option<Idl>>` ([#2582](https://github.com/coral-xyz/anchor/pull/2582)).[m
+[31m-- spl: Update `mpl-token-metadata` dependency to use the client SDK instead of the program crate ([#2632](https://github.com/coral-xyz/anchor/pull/2632)).[m
+[31m-- ts: Remove `base64-js` dependency ([#2635](https://github.com/coral-xyz/anchor/pull/2635)).[m
+[31m-- syn: `IdlTypeDefinitionTy` enum has a new variant `Alias` ([#2637](https://github.com/coral-xyz/anchor/pull/2637)).[m
+[31m-- cli, client, lang, spl: Solana `1.14` is no longer supported, minimum required Solana version is `1.16.0` ([#2645](https://github.com/coral-xyz/anchor/pull/2645)).[m
+[31m-- cli: `anchor_version` and `solana_version` property in `Anchor.toml` that was being used in verifiable builds are moved inside `toolchain`. They are now being used for all commands in the workspace, not just verifiable builds ([#2649](https://github.com/coral-xyz/anchor/pull/2649)).[m
+[31m-[m
+[31m-## [0.28.0] - 2023-06-09[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- client: Add `async` feature flag to use an asynchronous anchor-client ([#2488](https://github.com/coral-xyz/anchor/pull/2488)).[m
+[31m-- spl: Add metadata wrappers `approve_collection_authority`, `bubblegum_set_collection_size`, `burn_edition_nft`, `burn_nft`, `revoke_collection_authority`, `set_token_standard`, `utilize`, `unverify_sized_collection_item`, `unverify_collection` ([#2430](https://github.com/coral-xyz/anchor/pull/2430))[m
+[31m-- spl: Add `token_program` constraint to `Token`, `Mint`, and `AssociatedToken` accounts in order to override required `token_program` fields and use different token interface implementations in the same instruction ([#2460](https://github.com/coral-xyz/anchor/pull/2460))[m
+[31m-- cli: Add support for Solidity programs. `anchor init` and `anchor new` take an option `--solidity` which creates solidity code rather than rust. `anchor build` and `anchor test` work accordingly ([#2421](https://github.com/coral-xyz/anchor/pull/2421))[m
+[31m-- bench: Add benchmarking for compute units usage ([#2466](https://github.com/coral-xyz/anchor/pull/2466))[m
+[31m-- cli: `idl set-buffer`, `idl set-authority` and `idl close` take an option `--print-only`. which prints transaction in a base64 Borsh compatible format but not sent to the cluster. It's helpful when managing authority under a multisig, e.g., a user can create a proposal for a `Custom Instruction` in SPL Governance ([#2486](https://github.com/coral-xyz/anchor/pull/2486)).[m
+[31m-- lang: Add `emit_cpi!` and `#[event_cpi]` macros(behind `event-cpi` feature flag) to store event logs in transaction metadata ([#2438](https://github.com/coral-xyz/anchor/pull/2438)).[m
+[31m-- cli: Add `keys sync` command to sync program id declarations ([#2505](https://github.com/coral-xyz/anchor/pull/2505)).[m
+[31m-- cli: Create new programs with correct program ids ([#2509](https://github.com/coral-xyz/anchor/pull/2509)).[m
+[31m-- cli, client, lang, spl: Update Solana toolchain and dependencies to `1.16.0` and specify maximum version of `<1.17.0` ([#2512](https://github.com/coral-xyz/anchor/pull/2512)).[m
+[31m-- cli: `anchor deploy` command's `--program-name` argument accepts program lib names ([#2519](https://github.com/coral-xyz/anchor/pull/2519)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- ts: Narrowed `AccountClient` type to it's appropriate account type ([#2440](https://github.com/coral-xyz/anchor/pull/2440))[m
+[31m-- lang: Fix inability to use identifiers `program_id`, `accounts`, `ix_data`, `remaining_accounts` in instruction arguments ([#2464](https://github.com/coral-xyz/anchor/pull/2464))[m
+[31m-- cli: Fix incorrect `metadata.address` generation in IDL after deploying with a custom keypair ([#2485](https://github.com/coral-xyz/anchor/pull/2485))[m
+[31m-- cli: IDL commands no longer hang when the payer doesn't have funds to pay for the transaction fee ([#2492](https://github.com/coral-xyz/anchor/pull/2492))[m
+[31m-- cli: Fix `anchor new` not updating `Anchor.toml` ([#2516](https://github.com/coral-xyz/anchor/pull/2516)).[m
+[31m-- client, lang, spl: Allow wider range of dependency versions to reduce dependency issues ([#2524](https://github.com/coral-xyz/anchor/pull/2524)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- lang: Identifiers that are intended for internal usage(`program_id`, `accounts`, `ix_data`, `remaining_accounts`) have been renamed with `__` prefix ([#2464](https://github.com/coral-xyz/anchor/pull/2464))[m
+[31m-- spl: Remove the `metadata::create_metadata_account_v2` deprecated wrapper since it was removed from token metadata program ([#2480](https://github.com/coral-xyz/anchor/pull/2480))[m
+[31m-[m
+[31m-## [0.27.0] - 2023-03-08[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- spl: Add `MasterEditionAccount` account deserialization to spl metadata ([#2393](https://github.com/coral-xyz/anchor/pull/2393)).[m
+[31m-- lang: Add the `InitSpace` derive macro to automatically calculate the space at the initialization of an account ([#2346](https://github.com/coral-xyz/anchor/pull/2346)).[m
+[31m-- cli: Add `env` option to verifiable builds ([#2325](https://github.com/coral-xyz/anchor/pull/2325)).[m
+[31m-- cli: Add `idl close` command to close a program's IDL account ([#2329](https://github.com/coral-xyz/anchor/pull/2329)).[m
+[31m-- cli: `idl init` now supports very large IDL files ([#2329](https://github.com/coral-xyz/anchor/pull/2329)).[m
+[31m-- spl: Add `transfer_checked` function ([#2353](https://github.com/coral-xyz/anchor/pull/2353)).[m
+[31m-- spl: Add `approve_checked` function ([#2401](https://github.com/coral-xyz/anchor/pull/2401)).[m
+[31m-- cli: Add `--skip-build` option to the verify command ([#2387](https://github.com/coral-xyz/anchor/pull/2387)).[m
+[31m-- client: Add support for multithreading to the rust client: use flag `--multithreaded` ([#2321](https://github.com/coral-xyz/anchor/pull/2321)).[m
+[31m-- client: Add `async_rpc` a method which returns a nonblocking solana rpc client ([#2322](https://github.com/coral-xyz/anchor/pull/2322)).[m
+[31m-- avm, cli: Use the `rustls-tls` feature of `reqwest` so that users don't need OpenSSL installed ([#2385](https://github.com/coral-xyz/anchor/pull/2385)).[m
+[31m-- ts: Add `VersionedTransaction` support. Methods in the `Provider` class and `Wallet` interface now use the argument `tx: Transaction | VersionedTransaction` ([#2427](https://github.com/coral-xyz/anchor/pull/2427)).[m
+[31m-- cli: Add `--arch sbf` option to compile programs using `cargo build-sbf` ([#2398](https://github.com/coral-xyz/anchor/pull/2398)).[m
+[31m-- land: Support multiple programs with the same interface using `Interface` and `InterfaceAccount` types, related to token-2022 ([#2386](https://github.com/coral-xyz/anchor/pull/2386)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- ts: Make the return type of `AccountClient.fetchMultiple` match the account type being fetched ([#2390](https://github.com/coral-xyz/anchor/pull/2390))[m
+[31m-- cli: Don't regenerate idl in read_all_programs(). ([#2332](https://github.com/coral-xyz/anchor/pull/2332)).[m
+[31m-- ts: `provider.simulate` will send the transaction with `sigVerify: false` if no `signers` are present ([#2331](https://github.com/coral-xyz/anchor/pull/2331)).[m
+[31m-- cli: Failing commands will return the correct exit status. ([#2370](https://github.com/coral-xyz/anchor/pull/2370)).[m
+[31m-- idl: Update the IDL program to use non-deprecated account types ([#2365](https://github.com/coral-xyz/anchor/pull/2365)).[m
+[31m-- ts: Enum fields weren't being converted from snake_case to camelCase ([#2378](https://github.com/coral-xyz/anchor/pull/2378)).[m
+[31m-- lang/cli: Update to solana-program version 1.14.16 and rust version 1.60, appears to still be incompatible with 1.15 CLI ([#2420](https://github.com/coral-xyz/anchor/pull/2420)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- lang: Remove deprecated account types: `CpiAccount`, `Loader` and `ProgramAccount` ([#2375](https://github.com/coral-xyz/anchor/pull/2375)).[m
+[31m-- lang: Remove `state` and `interface` attributes ([#2285](https://github.com/coral-xyz/anchor/pull/2285)).[m
+[31m-- lang: Remove deprecated literal constraint which has been replaced by `#[account(constraint = {})]` ([#2379](https://github.com/coral-xyz/anchor/pull/2379)).[m
+[31m-- lang: `account(zero_copy)` and `zero_copy` attributes now derive the `bytemuck::Pod` and `bytemuck::Zeroable` traits instead of using `unsafe impl` ([#2330](https://github.com/coral-xyz/anchor/pull/2330)). This imposes useful restrictions on the type, like not having padding bytes and all fields being `Pod` themselves. See [bytemuck::Pod](https://docs.rs/bytemuck/latest/bytemuck/trait.Pod.html) for details. This change requires adding `bytemuck = { version = "1.4.0", features = ["derive", "min_const_generics"]}` to your `cargo.toml`. Legacy applications can still use `#[account(zero_copy(unsafe))]` and `#[zero_copy(unsafe)]` for the old behavior.[m
+[31m-- ts: Remove `createProgramAddressSync`, `findProgramAddressSync` (now available in `@solana/web3.js`) and update `associatedAddress` to be synchronous ([#2357](https://github.com/coral-xyz/anchor/pull/2357)).[m
+[31m-[m
+[31m-## [0.26.0] - 2022-12-15[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- cli: Add `--run` to `anchor test` for running a subset of test suites ([#1828](https://github.com/coral-xyz/anchor/issues/1828)).[m
+[31m-- client: Add `transaction` functions to RequestBuilder ([#1958](https://github.com/coral-xyz/anchor/pull/1958)).[m
+[31m-- spl: Add `create_metadata_accounts_v3` and `set_collection_size` wrappers ([#2119](https://github.com/coral-xyz/anchor/pull/2119)).[m
+[31m-- spl: Add `MetadataAccount` account deserialization. ([#2014](https://github.com/coral-xyz/anchor/pull/2014)).[m
+[31m-- spl: Add `update_primary_sale_happened_via_token` wrapper ([#2173](https://github.com/coral-xyz/anchor/pull/2173)).[m
+[31m-- spl: Add `sign_metadata` and `remove_creator_verification` wrappers ([#2175](https://github.com/coral-xyz/anchor/pull/2175)).[m
+[31m-- spl: Add `initialize_account3` and `initialize_mint2` ([#2265](https://github.com/coral-xyz/anchor/pull/2265)).[m
+[31m-- spl: Change `serum-dex` to `openbook-dex` ([#2308](https://github.com/coral-xyz/anchor/pull/2308)).[m
+[31m-- lang: Add parsing for consts from impl blocks for IDL PDA seeds generation ([#2128](https://github.com/coral-xyz/anchor/pull/2128)).[m
+[31m-- lang: Account closing reassigns to system program and reallocates ([#2169](https://github.com/coral-xyz/anchor/pull/2169)).[m
+[31m-- ts: Add coders for SPL programs ([#2143](https://github.com/coral-xyz/anchor/pull/2143)).[m
+[31m-- ts: Add `has_one` relations inference so accounts mapped via has_one relationships no longer need to be provided ([#2160](https://github.com/coral-xyz/anchor/pull/2160)).[m
+[31m-- ts: Add ability to set args after setting accounts and retrieving pubkeys ([#2160](https://github.com/coral-xyz/anchor/pull/2160)).[m
+[31m-- ts: Add `.prepare()` to builder pattern ([#2160](https://github.com/coral-xyz/anchor/pull/2160)).[m
+[31m-- spl: Add `freeze_delegated_account` and `thaw_delegated_account` wrappers ([#2164](https://github.com/coral-xyz/anchor/pull/2164)).[m
+[31m-- ts: Add `feePayer` check to `AnchorProvider` methods, so that anchor writes the provider's wallet as fee payer if fee payer isn't already set ([#2186](https://github.com/coral-xyz/anchor/pull/2186)).[m
+[31m-- ts: Add nested PDA inference ([#2194](https://github.com/coral-xyz/anchor/pull/2194)).[m
+[31m-- ts: Add ability to resolve missing accounts with a custom resolver ([#2194](https://github.com/coral-xyz/anchor/pull/2194)).[m
+[31m-- ts: Update the Solana web3 library used by anchor ts to version 1.64.0 ([#2220](https://github.com/coral-xyz/anchor/issues/2220)).[m
+[31m-- lang: Updates `AccountsClose` to make it safe to call manually ([#2209](https://github.com/coral-xyz/anchor/pull/2209)).[m
+[31m-- lang: Update rust used in the repo version 1.62 ([#2272](https://github.com/coral-xyz/anchor/pull/2272)).[m
+[31m-- cli: Allow custom cluster config ([#2271](https://github.com/coral-xyz/anchor/pull/2271)).[m
+[31m-- ts: Add optional flag to parseLogs to throw an error on decoding failure ([#2043](https://github.com/coral-xyz/anchor/pull/2043)).[m
+[31m-- cli: Add `test.validator.geyser_plugin_config` support ([#2016](https://github.com/coral-xyz/anchor/pull/2016)).[m
+[31m-- cli: Add `account` subcommand to cli ([#1923](https://github.com/coral-xyz/anchor/pull/1923))[m
+[31m-- cli: Add `ticks_per_slot` option to Validator args ([#1875](https://github.com/coral-xyz/anchor/pull/1875)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- lang: Fix parsing for bytes literals in the IDL ([#2261](https://github.com/coral-xyz/anchor/pull/2261)).[m
+[31m-- lang: Fix IDL `seed` generation for byte string literals ([#2125](https://github.com/coral-xyz/anchor/pull/2125)).[m
+[31m-- ts: Update seeds inference to allow nested user defined structs within the seeds ([#2198](https://github.com/coral-xyz/anchor/pull/2198)).[m
+[31m-- event: Fix multiple event listeners with the same name ([#2165](https://github.com/coral-xyz/anchor/pull/2165)).[m
+[31m-- lang: Prevent the payer account from being initialized as a program account ([#2284](https://github.com/coral-xyz/anchor/pull/2284)).[m
+[31m-- ts: Fixing breaking change where null or undefined wallet throws an error ([#2303](https://github.com/coral-xyz/anchor/pull/2303)).[m
+[31m-- ts: Fixed `.fetchNullable()` to be robust towards accounts only holding a balance ([#2301](https://github.com/coral-xyz/anchor/pull/2301)).[m
+[31m-- lang: Only add public enums to the IDL ([#2309](https://github.com/coral-xyz/anchor/pull/2309)).[m
+[31m-- lang: Fix heap intensive error mapping ([#2313](https://github.com/coral-xyz/anchor/pull/2313)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- ts: SPL coders have been removed from the main Anchor package. ([#2155](https://github.com/coral-xyz/anchor/pull/2155))[m
+[31m-- lang: Remove `rent` from constraints ([#2265](https://github.com/coral-xyz/anchor/pull/2265)).[m
+[31m-- spl: Remove `rent` from `associated_token::Create` ([#2265](https://github.com/coral-xyz/anchor/pull/2265)).[m
+[31m-- lang: Add `Discriminator` and `Owner` trait implementation for structures representing instructions ([#1997](https://github.com/coral-xyz/anchor/pull/1997)).[m
+[31m-- ts: '@coral-xyz/borsh' package is now part of the yarn monorepo ([#2290](https://github.com/coral-xyz/anchor/pull/2290)). The borsh package needs to be built before the anchor package can be built but this should happen automatically when running `yarn build` in packages/anchor, see [#2299](https://github.com/coral-xyz/anchor/pull/2299) and [#2306](https://github.com/coral-xyz/anchor/pull/2306).[m
+[31m-- lang: Add support for optionally passing in accounts using the syntax `Optional<Account<'info, T>>`. Shouldn't affect existing programs but may be a breaking change to tools that use the anchor generated IDL. [#2101](https://github.com/coral-xyz/anchor/pull/2101).[m
+[31m-- ts: Switch from `@project-serum/anchor` to the `@coral-xyz/anchor` package [#2318](https://github.com/coral-xyz/anchor/pull/2318).[m
+[31m-[m
+[31m-## [0.25.0] - 2022-07-05[m
+[31m-[m
+[31m-### Features[m
+[31m-[m
+[31m-- lang: Add `realloc`, `realloc::payer`, and `realloc::zero` as a new constraint group for program accounts ([#1986](https://github.com/coral-xyz/anchor/pull/1986)).[m
+[31m-- lang: Add `PartialEq` and `Eq` for `anchor_lang::Error` ([#1544](https://github.com/coral-xyz/anchor/pull/1544)).[m
+[31m-- cli: Add `--skip-build` to `anchor publish` ([#1786](https://github.com/coral-xyz/anchor/pull/1841)).[m
+[31m-- cli: Add `--program-keypair` to `anchor deploy` ([#1786](https://github.com/coral-xyz/anchor/pull/1786)).[m
+[31m-- cli: Add compilation optimizations to cli template ([#1807](https://github.com/coral-xyz/anchor/pull/1807)).[m
+[31m-- cli: `build` now adds docs to idl. This can be turned off with `--no-docs` ([#1561](https://github.com/coral-xyz/anchor/pull/1561)).[m
+[31m-- cli: Add `b` and `t` aliases for `build` and `test` respectively ([#1823](https://github.com/coral-xyz/anchor/pull/1823)).[m
+[31m-- spl: Add more derived traits to `TokenAccount` to `Mint` ([#1818](https://github.com/coral-xyz/anchor/pull/1818)).[m
+[31m-- spl: Add `sync_native` token program CPI wrapper function ([#1833](https://github.com/coral-xyz/anchor/pull/1833)).[m
+[31m-- cli: Allow passing arguments to an underlying script with `anchor run` ([#1914](https://github.com/coral-xyz/anchor/pull/1914)).[m
+[31m-- ts: Implement a coder for system program ([#1920](https://github.com/coral-xyz/anchor/pull/1920)).[m
+[31m-- ts: Add `program.coder.types` for encoding/decoding user-defined types ([#1931](https://github.com/coral-xyz/anchor/pull/1931)).[m
+[31m-- client: Add `send_with_spinner_and_config` function to RequestBuilder ([#1926](https://github.com/coral-xyz/anchor/pull/1926)).[m
+[31m-- ts: Implement a coder for SPL associated token program ([#1939](https://github.com/coral-xyz/anchor/pull/1939)).[m
+[31m-- ts: verbose error for missing `ANCHOR_WALLET` variable when using `NodeWallet.local()` ([#1958](https://github.com/coral-xyz/anchor/pull/1958)).[m
+[31m-- ts: Add `MethodsBuilder#accountsStrict` for strict typing on ix account input ([#2019](https://github.com/coral-xyz/anchor/pull/2019)).[m
+[31m-- Update solana dependencies to 1.10.29 ([#2027](https://github.com/coral-xyz/anchor/pull/2027)).[m
+[31m-[m
+[31m-### Fixes[m
+[31m-[m
+[31m-- cli: Fix `anchor keys list` reading the `target` folder in the wrong path ([#2063](https://github.com/coral-xyz/anchor/pull/2063)).[m
+[31m-- cli: Move `overflow-checks` into workspace `Cargo.toml` so that it will not be ignored by compiler ([#1806](https://github.com/coral-xyz/anchor/pull/1806)).[m
+[31m-- lang: Fix missing account name information when deserialization fails when using `init` or `zero` ([#1800](https://github.com/coral-xyz/anchor/pull/1800)).[m
+[31m-- ts: Expose the wallet's publickey on the Provider ([#1845](https://github.com/coral-xyz/anchor/pull/1845)).[m
+[31m-[m
+[31m-### Breaking[m
+[31m-[m
+[31m-- ts: Change `BROWSER` env variable to `ANCHOR_BROWSER` ([#1233](https://github.com/coral-xyz/anchor/pull/1233)).[m
+[31m-- ts: Add transaction signature to `EventCallback` parameters ([#1851](https://github.com/coral-xyz/anchor/pull/1851)).[m
+[31m-- ts: Change `EventParser#parseLogs` implementation to be a generator instead of callback function ([#2018](https://github.com/coral-xyz/anchor/pull/2018)).[m
+[31m-- lang: Adds a new `&mut reallocs: BTreeSet<Pubkey>` argument to `Accounts::try_accounts` ([#1986](https://github.com/coral-xyz/anchor/pull/1986)).[m
+[32m+[m[32m* cli: Move `overflow-checks` into workspace `Cargo.toml` so that it will not be ignored by compiler ([#1806](https://github.com/project-serum/anchor/pull/1806)).[m
+[32m+[m[32m* lang: Fix missing account name information when deserialization fails when using `init` or `zero` ([#1800](https://github.com/project-serum/anchor/pull/1800)).[m
+[32m+[m[32m* ts: Expose the wallet's publickey on the Provider ([#1845](https://github.com/project-serum/anchor/pull/1845)).[m
+ [m
+ ## [0.24.2] - 2022-04-13[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- lang: Fix `returns` being serialized as `null` instead of `undefined` in IDL ([#1782](https://github.com/coral-xyz/anchor/pull/1782)).[m
+[32m+[m[32m* lang: Fix `returns` being serialized as `null` instead of `undefined` in IDL ([#1782](https://github.com/project-serum/anchor/pull/1782)).[m
+ [m
+ ## [0.24.1] - 2022-04-12[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- lang: Fix `anchor build` failing if `Test.toml` included a relative path that didn't exist yet because it's created by `anchor build` ([#1772](https://github.com/coral-xyz/anchor/pull/1772)).[m
+[31m-- cli: Update js/ts template to use new `AnchorProvider` class ([#1770](https://github.com/coral-xyz/anchor/pull/1770)).[m
+[32m+[m[32m* lang: Fix `anchor build` failing if `Test.toml` included a relative path that didn't exist yet because it's created by `anchor build` ([#1772](https://github.com/project-serum/anchor/pull/1772)).[m
+[32m+[m[32m* cli: Update js/ts template to use new `AnchorProvider` class ([#1770](https://github.com/project-serum/anchor/pull/1770)).[m
+ [m
+ ## [0.24.0] - 2022-04-12[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Add support for multiple test suites with separate local validators ([#1681](https://github.com/coral-xyz/anchor/pull/1681)).[m
+[31m-- lang: Add return values to CPI client ([#1598](https://github.com/coral-xyz/anchor/pull/1598)).[m
+[31m-- ts: Add view functions ([#1695](https://github.com/coral-xyz/anchor/pull/1695)).[m
+[31m-- avm: New `avm update` command to update the Anchor CLI to the latest version ([#1670](https://github.com/coral-xyz/anchor/pull/1670)).[m
+[31m-- cli: Update js/ts templates to use new `program.methods` syntax ([#1732](https://github.com/coral-xyz/anchor/pull/1732)).[m
+[31m-- cli: Workspaces created with `anchor init` now come with the `prettier` formatter and scripts included ([#1741](https://github.com/coral-xyz/anchor/pull/1741)).[m
+[31m-- ts: Add `pubkeys` function to methods builder to get all instruction account addresses ([#1733](https://github.com/coral-xyz/anchor/pull/1733)).[m
+[31m-- ts: Export `LangErrorCode` and `LangErrorMessage` from `error.ts` ([#1756](https://github.com/coral-xyz/anchor/pull/1756)).[m
+[32m+[m[32m* lang: Add support for multiple test suites with separate local validators ([#1681](https://github.com/project-serum/anchor/pull/1681)).[m
+[32m+[m[32m* lang: Add return values to CPI client ([#1598](https://github.com/project-serum/anchor/pull/1598)).[m
+[32m+[m[32m* ts: Add view functions ([#1695](https://github.com/project-serum/anchor/pull/1695)).[m
+[32m+[m[32m* avm: New `avm update` command to update the Anchor CLI to the latest version ([#1670](https://github.com/project-serum/anchor/pull/1670)).[m
+[32m+[m[32m* cli: Update js/ts templates to use new `program.methods` syntax ([#1732](https://github.com/project-serum/anchor/pull/1732)).[m
+[32m+[m[32m* cli: Workspaces created with `anchor init` now come with the `prettier` formatter and scripts included ([#1741](https://github.com/project-serum/anchor/pull/1741)).[m
+[32m+[m[32m* ts: Add `pubkeys` function to methods builder to get all instruction account addresses ([#1733](https://github.com/project-serum/anchor/pull/1733)).[m
+[32m+[m[32m* ts: Export `LangErrorCode` and `LangErrorMessage` from `error.ts` ([#1756](https://github.com/project-serum/anchor/pull/1756)).[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- avm: `avm install` no longer downloads the version if already installed in the machine ([#1670](https://github.com/coral-xyz/anchor/pull/1670)).[m
+[31m-- cli: make `anchor test` fail when used with `--skip-deploy` option and without `--skip-local-validator` option but there already is a running validator ([#1675](https://github.com/coral-xyz/anchor/pull/1675)).[m
+[31m-- lang: Return proper error instead of panicking if account length is smaller than discriminator in functions of `(Account)Loader` ([#1678](https://github.com/coral-xyz/anchor/pull/1678)).[m
+[31m-- cli: Add `@types/bn.js` to `devDependencies` in cli template ([#1712](https://github.com/coral-xyz/anchor/pull/1712)).[m
+[31m-- ts: Event listener no longer crashes on Program Upgrade or any other unexpected log ([#1757](https://github.com/coral-xyz/anchor/pull/1757)).[m
+[32m+[m[32m* avm: `avm install` no longer downloads the version if already installed in the machine ([#1670](https://github.com/project-serum/anchor/pull/1670)).[m
+[32m+[m[32m* cli: make `anchor test` fail when used with `--skip-deploy` option and without `--skip-local-validator` option but there already is a running validator ([#1675](https://github.com/project-serum/anchor/pull/1675)).[m
+[32m+[m[32m* lang: Return proper error instead of panicking if account length is smaller than discriminator in functions of `(Account)Loader` ([#1678](https://github.com/project-serum/anchor/pull/1678)).[m
+[32m+[m[32m* cli: Add `@types/bn.js` to `devDependencies` in cli template ([#1712](https://github.com/project-serum/anchor/pull/1712)).[m
+[32m+[m[32m* ts: Event listener no longer crashes on Program Upgrade or any other unexpected log ([#1757](https://github.com/project-serum/anchor/pull/1757)).[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- avm: `avm install` switches to the newly installed version after installation finishes ([#1670](https://github.com/coral-xyz/anchor/pull/1670)).[m
+[31m-- spl: Re-export the `spl_token` crate ([#1665](https://github.com/coral-xyz/anchor/pull/1665)).[m
+[31m-- lang, cli, spl: Update solana toolchain to v1.9.13 ([#1653](https://github.com/coral-xyz/anchor/pull/1653) and [#1751](https://github.com/coral-xyz/anchor/pull/1751)).[m
+[31m-- lang: `Program` type now deserializes `programdata_address` only on demand ([#1723](https://github.com/coral-xyz/anchor/pull/1723)).[m
+[31m-- ts: Make `Provider` an interface and adjust its signatures and add `AnchorProvider` implementor class ([#1707](https://github.com/coral-xyz/anchor/pull/1707)).[m
+[31m-- spl: Change "to" to "from" in `token::burn` ([#1080](https://github.com/coral-xyz/anchor/pull/1080)).[m
+[32m+[m[32m* avm: `avm install` switches to the newly installed version after installation finishes ([#1670](https://github.com/project-serum/anchor/pull/1670)).[m
+[32m+[m[32m* spl: Re-export the `spl_token` crate ([#1665](https://github.com/project-serum/anchor/pull/1665)).[m
+[32m+[m[32m* lang, cli, spl: Update solana toolchain to v1.9.13 ([#1653](https://github.com/project-serum/anchor/pull/1653) and [#1751](https://github.com/project-serum/anchor/pull/1751)).[m
+[32m+[m[32m* lang: `Program` type now deserializes `programdata_address` only on demand ([#1723](https://github.com/project-serum/anchor/pull/1723)).[m
+[32m+[m[32m* ts: Make `Provider` an interface and adjust its signatures and add `AnchorProvider` implementor class ([#1707](https://github.com/project-serum/anchor/pull/1707)).[m
+[32m+[m[32m* spl: Change "to" to "from" in `token::burn` ([#1080](https://github.com/project-serum/anchor/pull/1080)).[m
+ [m
+ ## [0.23.0] - 2022-03-20[m
+ [m
+ ### Features[m
+ [m
+[31m-- cli: Add `anchor clean` command that's the same as `cargo clean` but preserves keypairs inside `target/deploy` ([#1470](https://github.com/coral-xyz/anchor/issues/1470)).[m
+[31m-- cli: Running `anchor init` now initializes a new git repository for the workspace. This can be disabled with the `--no-git` flag ([#1605](https://github.com/coral-xyz/anchor/pull/1605)).[m
+[31m-- cli: Add support for `anchor idl fetch` to work outside anchor workspace ([#1509](https://github.com/coral-xyz/anchor/pull/1509)).[m
+[31m-- cli: [[test.validator.clone]] also clones the program data account of programs owned by the bpf upgradeable loader ([#1481](https://github.com/coral-xyz/anchor/issues/1481)).[m
+[31m-- lang: Add new `AccountSysvarMismatch` error code and test cases for sysvars ([#1535](https://github.com/coral-xyz/anchor/pull/1535)).[m
+[31m-- lang: Replace `std::io::Cursor` with a custom `Write` impl that uses the Solana mem syscalls ([#1589](https://github.com/coral-xyz/anchor/pull/1589)).[m
+[31m-- lang: Add `require_neq`, `require_keys_neq`, `require_gt`, and `require_gte` comparison macros ([#1622](https://github.com/coral-xyz/anchor/pull/1622)).[m
+[31m-- lang: Handle arrays with const as size in instruction data ([#1623](https://github.com/coral-xyz/anchor/issues/1623).[m
+[31m-- spl: Add support for revoke instruction ([#1493](https://github.com/coral-xyz/anchor/pull/1493)).[m
+[31m-- ts: Add provider parameter to `Spl.token` factory method ([#1597](https://github.com/coral-xyz/anchor/pull/1597)).[m
+[32m+[m[32m* cli: Add `anchor clean` command that's the same as `cargo clean` but preserves keypairs inside `target/deploy` ([#1470](https://github.com/project-serum/anchor/issues/1470)).[m
+[32m+[m[32m* cli: Running `anchor init` now initializes a new git repository for the workspace. This can be disabled with the `--no-git` flag ([#1605](https://github.com/project-serum/anchor/pull/1605)).[m
+[32m+[m[32m* cli: Add support for `anchor idl fetch` to work outside anchor workspace ([#1509](https://github.com/project-serum/anchor/pull/1509)).[m
+[32m+[m[32m* cli: [[test.validator.clone]] also clones the program data account of programs owned by the bpf upgradeable loader ([#1481](https://github.com/project-serum/anchor/issues/1481)).[m
+[32m+[m[32m* lang: Add new `AccountSysvarMismatch` error code and test cases for sysvars ([#1535](https://github.com/project-serum/anchor/pull/1535)).[m
+[32m+[m[32m* lang: Replace `std::io::Cursor` with a custom `Write` impl that uses the Solana mem syscalls ([#1589](https://github.com/project-serum/anchor/pull/1589)).[m
+[32m+[m[32m* lang: Add `require_neq`, `require_keys_neq`, `require_gt`, and `require_gte` comparison macros ([#1622](https://github.com/project-serum/anchor/pull/1622)).[m
+[32m+[m[32m* lang: Handle arrays with const as size in instruction data ([#1623](https://github.com/project-serum/anchor/issues/1623).[m
+[32m+[m[32m* spl: Add support for revoke instruction ([#1493](https://github.com/project-serum/anchor/pull/1493)).[m
+[32m+[m[32m* ts: Add provider parameter to `Spl.token` factory method ([#1597](https://github.com/project-serum/anchor/pull/1597)).[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- ts: Fix the loss of strict typing using the `methods` namespace on builder functions ([#1539](https://github.com/coral-xyz/anchor/pull/1539)).[m
+[31m-- spl: Update `spl/governance` to use new errors ([#1582](https://github.com/coral-xyz/anchor/pull/1582)).[m
+[31m-- client: Fix `Cluster`'s `FromStr` implementation ([#1362](https://github.com/coral-xyz/anchor/pull/1362)).[m
+[31m-- lang: Implement `Key` for `Pubkey` again, so `associated_token::*` constraints can use pubkey targets again ([#1601](https://github.com/coral-xyz/anchor/pull/1601)).[m
+[31m-- lang: Adjust error code so `#[error_code]` works with just importing `anchor_lang::error_code` ([#1610](https://github.com/coral-xyz/anchor/pull/1610)).[m
+[31m-- ts: Fix `spl-token` coder account parsing ([#1604](https://github.com/coral-xyz/anchor/pull/1604)).[m
+[31m-- cli: Fix `npm install` fallback if `yarn` install doesn't work ([#1643](https://github.com/coral-xyz/anchor/pull/1643)).[m
+[31m-- lang: Fix bug where `owner = <target>` would not compile because of missing type annotation ([#1648](https://github.com/coral-xyz/anchor/pull/1648)).[m
+[31m-- ts: Adjust `send` and `simulate` functions in `provider.ts`, so they use the return value of `Wallet.signTransaction`([#1527](https://github.com/coral-xyz/anchor/pull/1527)).[m
+[32m+[m[32m* ts: Fix the loss of strict typing using the `methods` namespace on builder functions ([#1539](https://github.com/project-serum/anchor/pull/1539)).[m
+[32m+[m[32m* spl: Update `spl/governance` to use new errors ([#1582](https://github.com/project-serum/anchor/pull/1582)).[m
+[32m+[m[32m* client: Fix `Cluster`'s `FromStr` implementation ([#1362](https://github.com/project-serum/anchor/pull/1362)).[m
+[32m+[m[32m* lang: Implement `Key` for `Pubkey` again, so `associated_token::*` constraints can use pubkey targets again ([#1601](https://github.com/project-serum/anchor/pull/1601)).[m
+[32m+[m[32m* lang: Adjust error code so `#[error_code]` works with just importing `anchor_lang::error_code` ([#1610](https://github.com/project-serum/anchor/pull/1610)).[m
+[32m+[m[32m* ts: Fix `spl-token` coder account parsing ([#1604](https://github.com/project-serum/anchor/pull/1604)).[m
+[32m+[m[32m* cli: Fix `npm install` fallback if `yarn` install doesn't work ([#1643](https://github.com/project-serum/anchor/pull/1643)).[m
+[32m+[m[32m* lang: Fix bug where `owner = <target>` would not compile because of missing type annotation ([#1648](https://github.com/project-serum/anchor/pull/1648)).[m
+[32m+[m[32m* ts: Adjust `send` and `simulate` functions in `provider.ts`, so they use the return value of `Wallet.signTransaction`([#1527](https://github.com/project-serum/anchor/pull/1527)).[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- ts: Mark `transaction`, `instruction`, `simulate` and `rpc` program namespaces as deprecated in favor of `methods` ([#1539](https://github.com/coral-xyz/anchor/pull/1539)).[m
+[31m-- ts: No longer allow manual setting of globally resolvable program public keys in `methods#accounts()`. ([#1548][https://github.com/coral-xyz/anchor/pull/1548])[m
+[31m-- lang/ts: Events are now emitted using the `sol_log_data` syscall ([#1608](https://github.com/coral-xyz/anchor/pull/1608)).[m
+[31m-- lang: Remove space calculation using `#[derive(Default)]` ([#1519](https://github.com/coral-xyz/anchor/pull/1519)).[m
+[31m-- lang: Add support for logging expected and actual values and pubkeys. Add `require_eq` and `require_keys_eq` macros. Add default error code to `require` macro ([#1572](https://github.com/coral-xyz/anchor/pull/1572)).[m
+[31m-- lang: Add `system_program` CPI wrapper functions. Make `system_program` module public instead of re-exporting `system_program::System`([#1629](https://github.com/coral-xyz/anchor/pull/1629)).[m
+[31m-- cli: `avm use` no long prompts [y/n] if an install is needed first - it just tells the user to `avm install` ([#1565](https://github.com/coral-xyz/anchor/pull/1565))[m
+[31m-- ts: Add `AnchorError` with program stack and also a program stack for non-`AnchorError` errors ([#1640](https://github.com/coral-xyz/anchor/pull/1640)). `AnchorError` is not returned for `processed` tx that have `skipPreflight` set to `true` (it falls back to `ProgramError` or the raw solana library error).[m
+[32m+[m[32m* ts: Mark `transaction`, `instruction`, `simulate` and `rpc` program namespaces as deprecated in favor of `methods` ([#1539](https://github.com/project-serum/anchor/pull/1539)).[m
+[32m+[m[32m* ts: No longer allow manual setting of globally resolvable program public keys in `methods#accounts()`. ([#1548][https://github.com/project-serum/anchor/pull/1548])[m
+[32m+[m[32m* lang/ts: Events are now emitted using the `sol_log_data` syscall ([#1608](https://github.com/project-serum/anchor/pull/1608)).[m
+[32m+[m[32m* lang: Remove space calculation using `#[derive(Default)]` ([#1519](https://github.com/project-serum/anchor/pull/1519)).[m
+[32m+[m[32m* lang: Add support for logging expected and actual values and pubkeys. Add `require_eq` and `require_keys_eq` macros. Add default error code to `require` macro ([#1572](https://github.com/project-serum/anchor/pull/1572)).[m
+[32m+[m[32m* lang: Add `system_program` CPI wrapper functions. Make `system_program` module public instead of re-exporting `system_program::System`([#1629](https://github.com/project-serum/anchor/pull/1629)).[m
+[32m+[m[32m* cli: `avm use` no long prompts [y/n] if an install is needed first - it just tells the user to `avm install` ([#1565](https://github.com/project-serum/anchor/pull/1565))[m
+[32m+[m[32m* ts: Add `AnchorError` with program stack and also a program stack for non-`AnchorError` errors ([#1640](https://github.com/project-serum/anchor/pull/1640)). `AnchorError` is not returned for `processed` tx that have `skipPreflight` set to `true` (it falls back to `ProgramError` or the raw solana library error).[m
+ [m
+ ## [0.22.1] - 2022-02-28[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- cli: Fix rust template ([#1488](https://github.com/coral-xyz/anchor/pull/1488)).[m
+[31m-- lang: Handle array sizes with variable sizes in events and array size casting in IDL parsing ([#1485](https://github.com/coral-xyz/anchor/pull/1485))[m
+[32m+[m[32m* cli: Fix rust template ([#1488](https://github.com/project-serum/anchor/pull/1488)).[m
+[32m+[m[32m* lang: Handle array sizes with variable sizes in events and array size casting in IDL parsing ([#1485](https://github.com/project-serum/anchor/pull/1485))[m
+[32m+[m
+ [m
+ ## [0.22.0] - 2022-02-20[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Add check that declared id == program id ([#1451](https://github.com/coral-xyz/anchor/pull/1451)).[m
+[31m-- ts: Added float types support ([#1425](https://github.com/coral-xyz/anchor/pull/1425)).[m
+[31m-- cli: Add `--skip-lint` option to disable check linting introduced in ([#1452](https://github.com/coral-xyz/anchor/pull/1452)) for rapid prototyping ([#1482](https://github.com/coral-xyz/anchor/pull/1482)).[m
+[32m+[m[32m* lang: Add check that declared id == program id ([#1451](https://github.com/project-serum/anchor/pull/1451)).[m
+[32m+[m[32m* ts: Added float types support ([#1425](https://github.com/project-serum/anchor/pull/1425)).[m
+[32m+[m[32m* cli: Add `--skip-lint` option to disable check linting introduced in ([#1452](https://github.com/project-serum/anchor/pull/1452)) for rapid prototyping ([#1482](https://github.com/project-serum/anchor/pull/1482)).[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- ts: Allow nullable types for `Option<T>` mapped types ([#1428](https://github.com/coral-xyz/anchor/pull/1428)).[m
+[32m+[m[32m* ts: Allow nullable types for `Option<T>` mapped types ([#1428](https://github.com/project-serum/anchor/pull/1428)).[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- lang: Enforce that the payer for an init-ed account be marked `mut` ([#1271](https://github.com/coral-xyz/anchor/pull/1271)).[m
+[31m-- lang: All error-related code is now in the error module ([#1426](https://github.com/coral-xyz/anchor/pull/1426)).[m
+[31m-- lang: Require doc comments when using AccountInfo or UncheckedAccount types ([#1452](https://github.com/coral-xyz/anchor/pull/1452)).[m
+[31m-- lang: add [`error!`](https://docs.rs/anchor-lang/latest/anchor_lang/prelude/macro.error.html) and [`err!`](https://docs.rs/anchor-lang/latest/anchor_lang/prelude/macro.err.html) macro and `Result` type ([#1462](https://github.com/coral-xyz/anchor/pull/1462)).[m
+[31m-  This change will break most programs. Do the following to upgrade:[m
+[31m-  _ change all `ProgramResult`'s to `Result<()>`[m
+[31m-  _ change `#[error]` to `#[error_code]`[m
+[31m-  _ change all `Err(MyError::SomeError.into())` to `Err(error!(MyError::SomeError))` and all `Err(ProgramError::SomeProgramError)` to `Err(ProgramError::SomeProgramError.into())` or `Err(Error::from(ProgramError::SomeProgramError).with_source(source!()))` to provide file and line source of the error (`with_source` is most useful with `ProgramError`s. `error!` already adds source information for custom and anchor internal errors).[m
+[31m-  _ change all `solana_program::program::invoke()` to `solana_program::program::invoke().map_err(Into::into)` and `solana_program::program::invoke_signed()` to `solana_program::program::invoke_signed().map_err(Into::into)`[m
+[32m+[m[32m* lang: Enforce that the payer for an init-ed account be marked `mut` ([#1271](https://github.com/project-serum/anchor/pull/1271)).[m
+[32m+[m[32m* lang: All error-related code is now in the error module ([#1426](https://github.com/project-serum/anchor/pull/1426)).[m
+[32m+[m[32m* lang: Require doc comments when using AccountInfo or UncheckedAccount types ([#1452](https://github.com/project-serum/anchor/pull/1452)).[m
+[32m+[m[32m* lang: add [`error!`](https://docs.rs/anchor-lang/latest/anchor_lang/prelude/macro.error.html) and [`err!`](https://docs.rs/anchor-lang/latest/anchor_lang/prelude/macro.err.html) macro and `Result` type ([#1462](https://github.com/project-serum/anchor/pull/1462)).[m
+[32m+[m[32mThis change will break most programs. Do the following to upgrade:[m
+[32m+[m[32m     * change all `ProgramResult`'s to `Result<()>`[m
+[32m+[m[32m     * change `#[error]` to `#[error_code]`[m
+[32m+[m[32m     * change all `Err(MyError::SomeError.into())` to `Err(error!(MyError::SomeError))` and all `Err(ProgramError::SomeProgramError)` to `Err(ProgramError::SomeProgramError.into())` or `Err(Error::from(ProgramError::SomeProgramError).with_source(source!()))` to provide file and line source of the error (`with_source` is most useful with `ProgramError`s. `error!` already adds source information for custom and anchor internal errors).[m
+[32m+[m[32m     * change all `solana_program::program::invoke()` to `solana_program::program::invoke().map_err(Into::into)` and `solana_program::program::invoke_signed()` to `solana_program::program::invoke_signed().map_err(Into::into)`[m
+ [m
+ ## [0.21.0] - 2022-02-07[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- ts: Fix the root type declaration of the `Wallet` / `NodeWallet` class ([#1363](https://github.com/coral-xyz/anchor/pull/1363)).[m
+[31m-- ts: Improve type mapping of Account fields into Typescript with additional support for `Option<T>` and `Vec<String>` types ([#1393](https://github.com/coral-xyz/anchor/pull/1393)).[m
+[32m+[m[32m* ts: Fix the root type declaration of the `Wallet` / `NodeWallet` class ([#1363](https://github.com/project-serum/anchor/pull/1363)).[m
+[32m+[m[32m* ts: Improve type mapping of Account fields into Typescript with additional support for `Option<T>` and `Vec<String>` types ([#1393](https://github.com/project-serum/anchor/pull/1393)).[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Add `seeds::program` constraint for specifying which program_id to use when deriving PDAs ([#1197](https://github.com/coral-xyz/anchor/pull/1197)).[m
+[31m-- lang: `Context` now has a new `bumps: BTree<String, u8>` argument, mapping account name to bump seed "found" by the accounts context. This allows one to access bump seeds without having to pass them in from the client or recalculate them in the handler ([#1367](https://github.com/coral-xyz/anchor/pull/1367)).[m
+[31m-- lang, ts: Automatically infer PDA addresses ([#1331](https://github.com/coral-xyz/anchor/pull/1331)).[m
+[31m-- ts: Remove error logging in the event parser when log websocket encounters a program error ([#1313](https://github.com/coral-xyz/anchor/pull/1313)).[m
+[31m-- ts: Add new `methods` namespace to the program client, introducing a more ergonomic builder API ([#1324](https://github.com/coral-xyz/anchor/pull/1324)).[m
+[31m-- ts: Add registry utility for fetching the latest verified build ([#1371](https://github.com/coral-xyz/anchor/pull/1371)).[m
+[31m-- cli: Expose the solana-test-validator --account flag in Anchor.toml via [[test.validator.account]] ([#1366](https://github.com/coral-xyz/anchor/pull/1366)).[m
+[31m-- cli: Add avm, a tool for managing anchor-cli versions ([#1385](https://github.com/coral-xyz/anchor/pull/1385)).[m
+[32m+[m[32m* lang: Add `seeds::program` constraint for specifying which program_id to use when deriving PDAs ([#1197](https://github.com/project-serum/anchor/pull/1197)).[m
+[32m+[m[32m* lang: `Context` now has a new `bumps: BTree<String, u8>` argument, mapping account name to bump seed "found" by the accounts context. This allows one to access bump seeds without having to pass them in from the client or recalculate them in the handler ([#1367](https://github.com/project-serum/anchor/pull/1367)).[m
+[32m+[m[32m* lang, ts: Automatically infer PDA addresses ([#1331](https://github.com/project-serum/anchor/pull/1331)).[m
+[32m+[m[32m* ts: Remove error logging in the event parser when log websocket encounters a program error ([#1313](https://github.com/project-serum/anchor/pull/1313)).[m
+[32m+[m[32m* ts: Add new `methods` namespace to the program client, introducing a more ergonomic builder API ([#1324](https://github.com/project-serum/anchor/pull/1324)).[m
+[32m+[m[32m* ts: Add registry utility for fetching the latest verified build ([#1371](https://github.com/project-serum/anchor/pull/1371)).[m
+[32m+[m[32m* cli: Expose the solana-test-validator --account flag in Anchor.toml via [[test.validator.account]] ([#1366](https://github.com/project-serum/anchor/pull/1366)).[m
+[32m+[m[32m* cli: Add avm, a tool for managing anchor-cli versions ([#1385](https://github.com/project-serum/anchor/pull/1385)).[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- lang: Put `init_if_needed` behind a feature flag to decrease wrong usage ([#1258](https://github.com/coral-xyz/anchor/pull/1258)).[m
+[31m-- lang: rename `loader_account` module to `account_loader` module ([#1279](https://github.com/coral-xyz/anchor/pull/1279))[m
+[31m-- lang: The `Accounts` trait's `try_accounts` method now has an additional `bumps: &mut BTreeMap<String, u8>` argument, which accumulates bump seeds ([#1367](https://github.com/coral-xyz/anchor/pull/1367)).[m
+[31m-- lang: Providing `bump = <target>` targets with `init` will now error. On `init` only, it is required to use `bump` without a target and access the seed inside function handlers via `ctx.bumps.get("<pda-account-name")`. For subsequent seeds constraints (without init), it is recommended to store the bump on your account and use it as a `bump = <target>` target to minimize compute units used ([#1380](https://github.com/coral-xyz/anchor/pull/1380)).[m
+[31m-- ts: `Coder` is now an interface and the existing class has been renamed to `BorshCoder`. This change allows the generation of Anchor clients for non anchor programs ([#1259](https://github.com/coral-xyz/anchor/pull/1259/files)).[m
+[31m-- cli: [[test.clone]] key in Anchor.toml is renamed to [[test.validator.clone]] ([#1366](https://github.com/coral-xyz/anchor/pull/1366)).[m
+[32m+[m[32m* lang: Put `init_if_needed` behind a feature flag to decrease wrong usage ([#1258](https://github.com/project-serum/anchor/pull/1258)).[m
+[32m+[m[32m* lang: rename `loader_account` module to `account_loader` module ([#1279](https://github.com/project-serum/anchor/pull/1279))[m
+[32m+[m[32m* lang: The `Accounts` trait's `try_accounts` method now has an additional `bumps: &mut BTreeMap<String, u8>` argument, which accumulates bump seeds ([#1367](https://github.com/project-serum/anchor/pull/1367)).[m
+[32m+[m[32m* lang: Providing `bump = <target>` targets with `init` will now error. On `init` only, it is required to use `bump` without a target and access the seed inside function handlers via `ctx.bumps.get("<pda-account-name")`. For subsequent seeds constraints (without init), it is recommended to store the bump on your account and use it as a `bump = <target>` target to minimize compute units used ([#1380](https://github.com/project-serum/anchor/pull/1380)).[m
+[32m+[m[32m* ts: `Coder` is now an interface and the existing class has been renamed to `BorshCoder`. This change allows the generation of Anchor clients for non anchor programs  ([#1259](https://github.com/project-serum/anchor/pull/1259/files)).[m
+[32m+[m[32m* cli: [[test.clone]] key in Anchor.toml is renamed to [[test.validator.clone]] ([#1366](https://github.com/project-serum/anchor/pull/1366)).[m
+[32m+[m
+ [m
+ ## [0.20.1] - 2022-01-09[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- lang: Improved error msgs when required programs are missing when using the `init` constraint([#1257](https://github.com/coral-xyz/anchor/pull/1257))[m
+[32m+[m[32m* lang: Improved error msgs when required programs are missing when using the `init` constraint([#1257](https://github.com/project-serum/anchor/pull/1257))[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Allow repr overrides for zero copy accounts ([#1273](https://github.com/coral-xyz/anchor/pull/1273)).[m
+[32m+[m[32m* lang: Allow repr overrides for zero copy accounts ([#1273](https://github.com/project-serum/anchor/pull/1273)).[m
+ [m
+ ## [0.20.0] - 2022-01-06[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- lang: `init_if_needed` now checks rent exemption when init is not needed ([#1250](https://github.com/coral-xyz/anchor/pull/1250)).[m
+[31m-- lang: Add missing owner check when `associated_token::authority` is used ([#1240](https://github.com/coral-xyz/anchor/pull/1240)).[m
+[31m-- ts: Add type declarations for conditional `workspace` and `Wallet` exports ([#1137](https://github.com/coral-xyz/anchor/pull/1137)).[m
+[31m-- ts: Change commitment message `recent` to `processed` and `max` to `finalized` ([#1128](https://github.com/coral-xyz/anchor/pull/1128))[m
+[31m-- ts: fix `translateAddress` which currently leads to failing browser code. Now uses `PublicKey` constructor instead of prototype chain constructor name checking which doesn't work in the presence of code minifying/mangling([#1138](https://github.com/coral-xyz/anchor/pull/1138))[m
+[31m-- lang: add missing check that verifies that account is ATA when using `init_if_needed` and init is not needed([#1221](https://github.com/coral-xyz/anchor/pull/1221))[m
+[32m+[m[32m* lang: `init_if_needed` now checks rent exemption when init is not needed ([#1250](https://github.com/project-serum/anchor/pull/1250)).[m
+[32m+[m[32m* lang: Add missing owner check when `associated_token::authority` is used ([#1240](https://github.com/project-serum/anchor/pull/1240)).[m
+[32m+[m[32m* ts: Add type declarations for conditional `workspace` and `Wallet` exports ([#1137](https://github.com/project-serum/anchor/pull/1137)).[m
+[32m+[m[32m* ts: Change commitment message `recent` to `processed` and `max` to `finalized` ([#1128](https://github.com/project-serum/anchor/pull/1128))[m
+[32m+[m[32m* ts: fix `translateAddress` which currently leads to failing browser code. Now uses `PublicKey` constructor instead of prototype chain constructor name checking which doesn't work in the presence of code minifying/mangling([#1138](https://github.com/project-serum/anchor/pull/1138))[m
+[32m+[m[32m* lang: add missing check that verifies that account is ATA when using `init_if_needed` and init is not needed([#1221](https://github.com/project-serum/anchor/pull/1221))[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Add `programdata_address: Option<Pubkey>` field to `Program` account. Will be populated if account is a program owned by the upgradable bpf loader ([#1125](https://github.com/coral-xyz/anchor/pull/1125))[m
+[31m-- lang,ts,ci,cli,docs: update solana toolchain to version 1.8.5([#1133](https://github.com/coral-xyz/anchor/pull/1133)).[m
+[31m-- lang: Account wrappers for non-Anchor programs no longer have to implement the `serialize` function because it has a default impl now. Similarly, they no longer have to implement `try_deserialize` which now delegates to `try_deserialize_unchecked` by default([#1156](https://github.com/coral-xyz/anchor/pull/1156)).[m
+[31m-- lang: Add `set_inner` method to `Account<'a, T>` to enable easy updates ([#1177](https://github.com/coral-xyz/anchor/pull/1177)).[m
+[31m-- lang: Handle arrays with const as length ([#968](https://github.com/coral-xyz/anchor/pull/968)).[m
+[31m-- ts: Add optional commitment argument to `fetch` and `fetchMultiple` ([#1171](https://github.com/coral-xyz/anchor/pull/1171)).[m
+[31m-- lang: Implement `AsRef<T>` for `Account<'a, T>`([#1173](https://github.com/coral-xyz/anchor/pull/1173))[m
+[31m-- cli: Add `anchor expand` command which wraps around `cargo expand` ([#1160](https://github.com/coral-xyz/anchor/pull/1160))[m
+[32m+[m[32m* lang: Add `programdata_address: Option<Pubkey>` field to `Program` account. Will be populated if account is a program owned by the upgradable bpf loader ([#1125](https://github.com/project-serum/anchor/pull/1125))[m
+[32m+[m[32m* lang,ts,ci,cli,docs: update solana toolchain to version 1.8.5([#1133](https://github.com/project-serum/anchor/pull/1133)).[m
+[32m+[m[32m* lang: Account wrappers for non-Anchor programs no longer have to implement the `serialize` function because it has a default impl now. Similarly, they no longer have to implement `try_deserialize` which now delegates to `try_deserialize_unchecked` by default([#1156](https://github.com/project-serum/anchor/pull/1156)).[m
+[32m+[m[32m* lang: Add `set_inner` method to `Account<'a, T>` to enable easy updates ([#1177](https://github.com/project-serum/anchor/pull/1177)).[m
+[32m+[m[32m* lang: Handle arrays with const as length ([#968](https://github.com/project-serum/anchor/pull/968)).[m
+[32m+[m[32m* ts: Add optional commitment argument to `fetch` and `fetchMultiple` ([#1171](https://github.com/project-serum/anchor/pull/1171)).[m
+[32m+[m[32m* lang: Implement `AsRef<T>` for `Account<'a, T>`([#1173](https://github.com/project-serum/anchor/pull/1173))[m
+[32m+[m[32m* cli: Add `anchor expand` command which wraps around `cargo expand` ([#1160](https://github.com/project-serum/anchor/pull/1160))[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- client: Client::new and Client::new_with_options now accept `Rc<dyn Signer>` instead of `Keypair` ([#975](https://github.com/coral-xyz/anchor/pull/975)).[m
+[31m-- lang, ts: Change error enum name and message for 'wrong program ownership' account validation ([#1154](https://github.com/coral-xyz/anchor/pull/1154)).[m
+[31m-- lang: Change from `#[repr(packed)]` to `#[repr(C)]` for zero copy accounts ([#1106](https://github.com/coral-xyz/anchor/pull/1106)).[m
+[31m-- lang: Account types can now be found either in the `prelude` module or the `accounts` module but not longer directly under the root.[m
+[31m-  Deprecated account types are no longer imported by the prelude ([#1208](https://github.com/coral-xyz/anchor/pull/1208)).[m
+[32m+[m[32m* client: Client::new and Client::new_with_options now accept `Rc<dyn Signer>` instead of `Keypair` ([#975](https://github.com/project-serum/anchor/pull/975)).[m
+[32m+[m[32m* lang, ts: Change error enum name and message for 'wrong program ownership' account validation ([#1154](https://github.com/project-serum/anchor/pull/1154)).[m
+[32m+[m[32m* lang: Change from `#[repr(packed)]` to `#[repr(C)]` for zero copy accounts ([#1106](https://github.com/project-serum/anchor/pull/1106)).[m
+[32m+[m[32m* lang: Account types can now be found either in the `prelude` module or the `accounts` module but not longer directly under the root.[m
+[32m+[m[32mDeprecated account types are no longer imported by the prelude ([#1208](https://github.com/project-serum/anchor/pull/1208)).[m
+ [m
+ ## [0.19.0] - 2021-12-08[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- lang: Add `deprecated` attribute to `ProgramAccount` ([#1014](https://github.com/coral-xyz/anchor/pull/1014)).[m
+[31m-- cli: Add version number from programs `Cargo.toml` into extracted IDL ([#1061](https://github.com/coral-xyz/anchor/pull/1061)).[m
+[31m-- lang: Add `deprecated` attribute to `Loader`([#1078](https://github.com/coral-xyz/anchor/pull/1078)).[m
+[31m-- lang: the `init_if_needed` attribute now checks that given attributes (e.g. space, owner, token::authority etc.) are validated even when init is not needed ([#1096](https://github.com/coral-xyz/anchor/pull/1096)).[m
+[32m+[m[32m* lang: Add `deprecated` attribute to `ProgramAccount` ([#1014](https://github.com/project-serum/anchor/pull/1014)).[m
+[32m+[m[32m* cli: Add version number from programs `Cargo.toml` into extracted IDL ([#1061](https://github.com/project-serum/anchor/pull/1061)).[m
+[32m+[m[32m* lang: Add `deprecated` attribute to `Loader`([#1078](https://github.com/project-serum/anchor/pull/1078)).[m
+[32m+[m[32m* lang: the `init_if_needed` attribute now checks that given attributes (e.g. space, owner, token::authority etc.) are validated even when init is not needed ([#1096](https://github.com/project-serum/anchor/pull/1096)).[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Add `ErrorCode::AccountNotInitialized` error to separate the situation when the account has the wrong owner from when it does not exist (#[1024](https://github.com/coral-xyz/anchor/pull/1024)).[m
+[31m-- lang: Called instructions now log their name by default. This can be turned off with the `no-log-ix-name` flag ([#1057](https://github.com/coral-xyz/anchor/pull/1057)).[m
+[31m-- lang: `ProgramData` and `UpgradableLoaderState` can now be passed into `Account` as generics. see [UpgradeableLoaderState](https://docs.rs/solana-program/latest/solana_program/bpf_loader_upgradeable/enum.UpgradeableLoaderState.html). `UpgradableLoaderState` can also be matched on to get `ProgramData`, but when `ProgramData` is used instead, anchor does the serialization and checking that it is actually program data for you ([#1095](https://github.com/coral-xyz/anchor/pull/1095)).[m
+[31m-- ts: Add better error msgs in the ts client if something wrong (i.e. not a pubkey or a string) is passed in as an account in an instruction accounts object ([#1098](https://github.com/coral-xyz/anchor/pull/1098)).[m
+[31m-- ts: Add inputs `postInstructions` and `preInstructions` as a replacement for (the now deprecated) `instructions` ([#1007](https://github.com/coral-xyz/anchor/pull/1007)).[m
+[31m-- ts: Add `getAccountInfo` helper method to account namespace/client ([#1084](https://github.com/coral-xyz/anchor/pull/1084)).[m
+[32m+[m[32m* lang: Add `ErrorCode::AccountNotInitialized` error to separate the situation when the account has the wrong owner from when it does not exist (#[1024](https://github.com/project-serum/anchor/pull/1024)).[m
+[32m+[m[32m* lang: Called instructions now log their name by default. This can be turned off with the `no-log-ix-name` flag ([#1057](https://github.com/project-serum/anchor/pull/1057)).[m
+[32m+[m[32m* lang: `ProgramData` and `UpgradableLoaderState` can now be passed into `Account` as generics. see [UpgradeableLoaderState](https://docs.rs/solana-program/latest/solana_program/bpf_loader_upgradeable/enum.UpgradeableLoaderState.html). `UpgradableLoaderState` can also be matched on to get `ProgramData`, but when `ProgramData` is used instead, anchor does the serialization and checking that it is actually program data for you  ([#1095](https://github.com/project-serum/anchor/pull/1095)).[m
+[32m+[m[32m* ts: Add better error msgs in the ts client if something wrong (i.e. not a pubkey or a string) is passed in as an account in an instruction accounts object ([#1098](https://github.com/project-serum/anchor/pull/1098)).[m
+[32m+[m[32m* ts: Add inputs `postInstructions` and `preInstructions` as a replacement for (the now deprecated) `instructions` ([#1007](https://github.com/project-serum/anchor/pull/1007)).[m
+[32m+[m[32m* ts: Add `getAccountInfo` helper method to account namespace/client ([#1084](https://github.com/project-serum/anchor/pull/1084)).[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- lang, ts: Error codes have been mapped to new numbers to allow for more errors per namespace ([#1096](https://github.com/coral-xyz/anchor/pull/1096)).[m
+[32m+[m[32m* lang, ts: Error codes have been mapped to new numbers to allow for more errors per namespace ([#1096](https://github.com/project-serum/anchor/pull/1096)).[m
+ [m
+ ## [0.18.2] - 2021-11-14[m
+ [m
+[31m-- cli: Replace global JavaScript dependency installs with local.[m
+[32m+[m[32m* cli: Replace global JavaScript dependency installs with local.[m
+ [m
+ ### Features[m
+ [m
+[31m-- lang: Add `SystemAccount<'info>` account type for generic wallet addresses or accounts owned by the system program ([#954](https://github.com/coral-xyz/anchor/pull/954))[m
+[32m+[m[32m* lang: Add `SystemAccount<'info>` account type for generic wallet addresses or accounts owned by the system program ([#954](https://github.com/project-serum/anchor/pull/954))[m
+ [m
+ ### Fixes[m
+ [m
+[31m-- cli: fix dns in NODE_OPTIONS ([#928](https://github.com/coral-xyz/anchor/pull/928)).[m
+[31m-- cli: output TypeScript IDL in `idl parse` subcommand ([#941](https://github.com/coral-xyz/anchor/pull/941)).[m
+[31m-- cli: Add fields `os` and `cpu` to npm package `@project-serum/anchor-cli` ([#976](https://github.com/coral-xyz/anchor/pull/976)).[m
+[31m-- cli: Allow specify output directory for TypeScript IDL ([#940](https://github.com/coral-xyz/anchor/pull/940)).[m
+[32m+[m[32m* cli: fix dns in NODE_OPTIONS ([#928](https://github.com/project-serum/anchor/pull/928)).[m
+[32m+[m[32m* cli: output TypeScript IDL in `idl parse` subcommand ([#941](https://github.com/project-serum/anchor/pull/941)).[m
+[32m+[m[32m* cli: Add fields `os` and `cpu` to npm package `@project-serum/anchor-cli` ([#976](https://github.com/project-serum/anchor/pull/976)).[m
+[32m+[m[32m* cli: Allow specify output directory for TypeScript IDL ([#940](https://github.com/project-serum/anchor/pull/940)).[m
+ [m
+ ### Breaking[m
+ [m
+[31m-- spl: Move permissioned markets into dex repository ([#962](https://github.com/coral-xyz/anchor/pull/962)).[m
+[32m+[m[32m* spl: Move permissioned markets into dex repository ([#962](https://github.com/project-serum/anchor/pull/962)).[m
+ [m
+ ## [0.18.0] - 2021-10-24[m
+ [m
+ ### Features[m
+ [m
+[31m-- cli: Add support for configuration options for `solana-test-validator` in Anchor.toml ([#834](https://github.com/coral-xyz/anchor/pull/834)).[m
+[31m-- cli: `target/types` directory now created on build to store a TypeScript types file for each program's IDL ([#795](https://github.com/coral-xyz/anchor/pull/795)).[m
+[31m-- ts: `Program<T>` can now be typed with an IDL type ([#795](https://github.com/coral-xyz/anchor/pull/795)).[m
+[31m-- lang: Add `mint::freeze_authority` keyword for mint initialization within `#[derive(Accounts)]` ([#835](https://github.com/coral-xyz/anchor/pull/835)).[m
+[31m-- lang: Add `AccountLoader` type for `zero_copy` accounts with support for CPI ([#792](https://github.com/coral-xyz/anchor/pull/792)).[m
+[31m-- lang: Add `#[account(init_if_needed)]` keyword for allowing one to invoke the same instruction even if the account was created already ([#906](https://github.com/coral-xyz/anchor/pull/906)).[m
+[31m-- lang: Add custom errors support for raw constraints ([#905](https://github.com/coral-xyz/anchor/pull/905)).[m
+[31m-- lang, cli, spl: Update solana toolchain to v1.8.0 ([#886](https://github.com/coral-xyz/anchor/pull/886)).[m
+[31m-- lang: Add custom errors support for `signer`, `mut`, `has_one`, `owner`, raw constraints and `address` ([#905](https://github.com/coral-xyz/anchor/pull/905), [#913](https://github.com/coral-xyz/anchor/pull/913)).[m
+[32m+[m[32m* cli: Add support for configuration options for `solana-test-validator` in Anchor.toml ([#834](https://github.com/project-serum/anchor/pull/834)).[m
+[32m+[m[32m* cli: `target/types` directory now created on build to store a TypeScript types file for each program's IDL ([#795](https://github.com/project-serum/anchor/pull/795)).[m
+[32m+[m[32m* ts: `Program<T>` can now be typed with an IDL type ([#795](https://github.com/project-serum/anchor/pull/795)).[m
+[32m+[m[32m* lang: Add `mint::freeze_authority` keyword for mint initialization within `#[derive(Accounts)]` ([#835](https://github.com/project-serum/anchor/pull/835)).[m
+[32m+[m[32m* lang: Add `AccountLoader` type for `zero_copy` accounts with support for CPI ([#792](https://github.com/project-serum/anchor/pull/792)).[m
+[32m+[m[32m* lang: Add `#[account(init_if_needed)]` keyword for allowing one to invoke the same instruction even if the account was created already ([#906](https://github.com/project-serum/anchor/pull/906)).[m
+[32m+[m[32m* lang: Add custom errors support for raw constraints ([#905](https://github.com/project-serum/anchor/pull/905)).[m
+[32m+[m[32m* lang, cli, spl: Update solana toolchain to v1.8.0 ([#886](https://github.com/project-serum/ancho

@@ -3,11 +3,7 @@ members = [
     "programs/*"
 ]
 exclude = [
-    "deps/openbook-dex",
+    "deps/serum-dex",
     "deps/stake",
     "deps/swap"
 ]
-resolver = "2"
-
-[profile.release]
-overflow-checks = true

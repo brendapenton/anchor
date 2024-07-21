@@ -17,18 +17,17 @@ use crate::{Accounts, AccountsClose, AccountsExit, Result, ToAccountInfos, ToAcc
 use solana_program::account_info::AccountInfo;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::ops::Deref;
 
-impl<'info, B, T: Accounts<'info, B>> Accounts<'info, B> for Box<T> {
+impl<'info, T: Accounts<'info>> Accounts<'info> for Box<T> {
     fn try_accounts(
         program_id: &Pubkey,
-        accounts: &mut &'info [AccountInfo<'info>],
+        accounts: &mut &[AccountInfo<'info>],
         ix_data: &[u8],
-        bumps: &mut B,
-        reallocs: &mut BTreeSet<Pubkey>,
+        bumps: &mut BTreeMap<String, u8>,
     ) -> Result<Self> {
-        T::try_accounts(program_id, accounts, ix_data, bumps, reallocs).map(Box::new)
+        T::try_accounts(program_id, accounts, ix_data, bumps).map(Box::new)
     }
 }
 

@@ -23,14 +23,6 @@ pub mod events {
         });
         Ok(())
     }
-
-    pub fn test_event_cpi(ctx: Context<TestEventCpi>) -> Result<()> {
-        emit_cpi!(MyOtherEvent {
-            data: 7,
-            label: "cpi".to_string(),
-        });
-        Ok(())
-    }
 }
 
 #[derive(Accounts)]
@@ -38,10 +30,6 @@ pub struct Initialize {}
 
 #[derive(Accounts)]
 pub struct TestEvent {}
-
-#[event_cpi]
-#[derive(Accounts)]
-pub struct TestEventCpi {}
 
 #[event]
 pub struct MyEvent {

@@ -1,7 +1,7 @@
 import assert from "assert";
-import * as anchor from "@coral-xyz/anchor";
+import * as anchor from "@project-serum/anchor";
 import * as borsh from "borsh";
-import { Program } from "@coral-xyz/anchor";
+import { Program } from "@project-serum/anchor";
 import { Callee } from "../target/types/callee";
 import { Caller } from "../target/types/caller";
 import { ConfirmOptions } from "@solana/web3.js";
@@ -117,7 +117,6 @@ describe("CPI return", () => {
       [Data, { kind: "struct", fields: [["value", "u64"]] }],
     ]);
     const deserialized = borsh.deserialize(schema, Data, buffer);
-    // @ts-ignore
     assert(deserialized.value.toNumber() === 11);
   });
 
@@ -159,7 +158,7 @@ describe("CPI return", () => {
       (f) => f.name == "returnStruct"
     );
     assert.deepStrictEqual(returnStructInstruction.returns, {
-      defined: { name: "structReturn" },
+      defined: "StructReturn",
     });
   });
 

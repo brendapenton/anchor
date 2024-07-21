@@ -1,5 +1,5 @@
 const assert = require("assert");
-const anchor = require("@coral-xyz/anchor");
+const anchor = require("@project-serum/anchor");
 
 describe("basic-4", () => {
   const provider = anchor.AnchorProvider.local();
@@ -7,45 +7,35 @@ describe("basic-4", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.Basic4,
-    counterSeed = anchor.utils.bytes.utf8.encode("counter");
-
-  let counterPubkey;
-
-  before(async () => {
-    [counterPubkey] = await anchor.web3.PublicKey.findProgramAddress(
-      [counterSeed],
-      program.programId
-    );
-  });
+  const program = anchor.workspace.Basic4;
 
   it("Is runs the constructor", async () => {
+    // #region ctor
     // Initialize the program's state struct.
-    await program.methods
-      .initialize()
-      .accounts({
-        counter: counterPubkey,
+    await program.state.rpc.new({
+      accounts: {
         authority: provider.wallet.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .rpc();
+      },
+    });
+    // #endregion ctor
 
     // Fetch the state struct from the network.
-    const counterAccount = await program.account.counter.fetch(counterPubkey);
+    // #region accessor
+    const state = await program.state.fetch();
+    // #endregion accessor
 
-    assert.ok(counterAccount.count.eq(new anchor.BN(0)));
+    assert.ok(state.count.eq(new anchor.BN(0)));
   });
 
   it("Executes a method on the program", async () => {
-    await program.methods
-      .increment()
-      .accounts({
-        counter: counterPubkey,
+    // #region instruction
+    await program.state.rpc.increment({
+      accounts: {
         authority: provider.wallet.publicKey,
-      })
-      .rpc();
-
-    const counterAccount = await program.account.counter.fetch(counterPubkey);
-    assert.ok(counterAccount.count.eq(new anchor.BN(1)));
+      },
+    });
+    // #endregion instruction
+    const state = await program.state.fetch();
+    assert.ok(state.count.eq(new anchor.BN(1)));
   });
 });

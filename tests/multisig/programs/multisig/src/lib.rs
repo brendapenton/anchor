@@ -17,6 +17,7 @@
 //! the `execute_transaction`, once enough (i.e. `threshold`) of the owners have
 //! signed.
 
+use anchor_lang::accounts::program_account::ProgramAccount;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_lang::solana_program::instruction::Instruction;
@@ -167,23 +168,23 @@ pub mod multisig {
 #[derive(Accounts)]
 pub struct CreateMultisig<'info> {
     #[account(zero)]
-    multisig: Account<'info, Multisig>,
+    multisig: ProgramAccount<'info, Multisig>,
 }
 
 #[derive(Accounts)]
 pub struct CreateTransaction<'info> {
-    multisig: Account<'info, Multisig>,
+    multisig: ProgramAccount<'info, Multisig>,
     #[account(zero)]
-    transaction: Account<'info, Transaction>,
+    transaction: ProgramAccount<'info, Transaction>,
     // One of the owners. Checked in the handler.
     proposer: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct Approve<'info> {
-    multisig: Account<'info, Multisig>,
+    multisig: ProgramAccount<'info, Multisig>,
     #[account(mut, has_one = multisig)]
-    transaction: Account<'info, Transaction>,
+    transaction: ProgramAccount<'info, Transaction>,
     // One of the multisig owners. Checked in the handler.
     owner: Signer<'info>,
 }
@@ -191,7 +192,7 @@ pub struct Approve<'info> {
 #[derive(Accounts)]
 pub struct Auth<'info> {
     #[account(mut)]
-    multisig: Account<'info, Multisig>,
+    multisig: ProgramAccount<'info, Multisig>,
     #[account(
         signer,
         seeds = [multisig.to_account_info().key.as_ref()],
@@ -202,14 +203,14 @@ pub struct Auth<'info> {
 
 #[derive(Accounts)]
 pub struct ExecuteTransaction<'info> {
-    multisig: Account<'info, Multisig>,
+    multisig: ProgramAccount<'info, Multisig>,
     #[account(
         seeds = [multisig.to_account_info().key.as_ref()],
         bump = multisig.nonce,
     )]
     multisig_signer: AccountInfo<'info>,
     #[account(mut, has_one = multisig)]
-    transaction: Account<'info, Transaction>,
+    transaction: ProgramAccount<'info, Transaction>,
 }
 
 #[account]

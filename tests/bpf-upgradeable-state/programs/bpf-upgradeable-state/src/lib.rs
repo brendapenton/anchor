@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 
-use crate::program::BpfUpgradeableState;
-
 declare_id!("Cum9tTyj5HwcEiAmhgaS7Bbj4UczCwsucrCkxRECzM4e");
 
 #[program]
@@ -75,7 +73,7 @@ pub struct SetAdminSettingsUseProgramState<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(constraint = program.programdata_address()? == Some(program_data.key()))]
-    pub program: Program<'info, BpfUpgradeableState>,
+    pub program: Program<'info, crate::program::BpfUpgradeableState>,
     #[account(constraint = program_data.upgrade_authority_address == Some(authority.key()))]
     pub program_data: Account<'info, ProgramData>,
     pub system_program: Program<'info, System>,

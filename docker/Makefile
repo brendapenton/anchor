@@ -1,16 +1,16 @@
 WORKDIR=$(PWD)
 #
-# Anchor version.
+# Extract anchor version from the Cargo.toml.
 #
-ANCHOR_CLI=v0.30.1
+ANCHOR_CLI=v$(shell awk -F ' = ' '$$1 ~ /version/ { gsub(/[\"]/, "", $$2); printf("%s",$$2) }' ../cli/Cargo.toml)
 #
 # Solana toolchain.
 #
-SOLANA_CLI=v1.18.17
+SOLANA_CLI=v1.9.13
 #
 # Build version should match the Anchor cli version.
 #
-IMG_ORG ?= backpackapp
+IMG_ORG ?= projectserum
 IMG_VER ?= $(ANCHOR_CLI)
 
 .PHONY: build build-push build-shell publish

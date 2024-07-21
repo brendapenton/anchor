@@ -1,16 +1,3 @@
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
-
-pub mod codegen;
-pub mod parser;
-
-#[cfg(feature = "idl-build")]
-pub mod idl;
-
-#[cfg(feature = "hash")]
-pub mod hash;
-#[cfg(not(feature = "hash"))]
-pub(crate) mod hash;
-
 use codegen::accounts as accounts_codegen;
 use codegen::program as program_codegen;
 use parser::accounts as accounts_parser;
@@ -26,12 +13,22 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::token::Comma;
 use syn::{
-    Expr, Generics, Ident, ItemEnum, ItemFn, ItemMod, ItemStruct, LitInt, PatType, Token, Type,
-    TypePath,
+    Expr, Generics, Ident, ImplItemMethod, ItemEnum, ItemFn, ItemImpl, ItemMod, ItemStruct, LitInt,
+    LitStr, PatType, Token, Type, TypePath,
 };
+
+pub mod codegen;
+#[cfg(feature = "hash")]
+pub mod hash;
+#[cfg(not(feature = "hash"))]
+pub(crate) mod hash;
+#[cfg(feature = "idl")]
+pub mod idl;
+pub mod parser;
 
 #[derive(Debug)]
 pub struct Program {
+    pub state: Option<State>,
     pub ixs: Vec<Ix>,
     pub name: Ident,
     pub docs: Option<Vec<String>>,
@@ -59,6 +56,32 @@ impl ToTokens for Program {
 }
 
 #[derive(Debug)]
+pub struct State {
+    pub name: String,
+    pub strct: ItemStruct,
+    pub ctor_and_anchor: Option<(ImplItemMethod, Ident)>,
+    pub impl_block_and_methods: Option<(ItemImpl, Vec<StateIx>)>,
+    pub interfaces: Option<Vec<StateInterface>>,
+    pub is_zero_copy: bool,
+}
+
+#[derive(Debug)]
+pub struct StateIx {
+    pub raw_method: ImplItemMethod,
+    pub ident: Ident,
+    pub args: Vec<IxArg>,
+    pub anchor_ident: Ident,
+    // True if there exists a &self on the method.
+    pub has_receiver: bool,
+}
+
+#[derive(Debug)]
+pub struct StateInterface {
+    pub trait_name: String,
+    pub methods: Vec<StateIx>,
+}
+
+#[derive(Debug)]
 pub struct Ix {
     pub raw_method: ItemFn,
     pub ident: Ident,
@@ -67,8 +90,6 @@ pub struct Ix {
     pub returns: IxReturn,
     // The ident for the struct deriving Accounts.
     pub anchor_ident: Ident,
-    // The discriminator based on the `#[interface]` attribute.
-    pub interface_discriminator: Option<[u8; 8]>,
 }
 
 #[derive(Debug)]
@@ -143,7 +164,7 @@ impl AccountsStruct {
             instruction_api
                 .iter()
                 .map(|expr| {
-                    let arg = parser::tts_to_string(expr);
+                    let arg = parser::tts_to_string(&expr);
                     let components: Vec<&str> = arg.split(" : ").collect();
                     assert!(components.len() == 2);
                     (components[0].to_string(), components[1].to_string())
@@ -157,29 +178,6 @@ impl AccountsStruct {
             .iter()
             .map(|field| field.ident().to_string())
             .collect()
-    }
-
-    pub fn has_optional(&self) -> bool {
-        for field in &self.fields {
-            if let AccountField::Field(field) = field {
-                if field.is_optional {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    pub fn is_field_optional<T: quote::ToTokens>(&self, field: &T) -> bool {
-        let matching_field = self
-            .fields
-            .iter()
-            .find(|f| *f.ident() == parser::tts_to_string(field));
-        if let Some(matching_field) = matching_field {
-            matching_field.is_optional()
-        } else {
-            false
-        }
     }
 }
 
@@ -198,26 +196,17 @@ impl AccountField {
         }
     }
 
-    fn is_optional(&self) -> bool {
-        match self {
-            AccountField::Field(field) => field.is_optional,
-            AccountField::CompositeField(_) => false,
-        }
-    }
-
     pub fn ty_name(&self) -> Option<String> {
-        let qualified_ty_name = match self {
+        match self {
             AccountField::Field(field) => match &field.ty {
                 Ty::Account(account) => Some(parser::tts_to_string(&account.account_type_path)),
+                Ty::ProgramAccount(account) => {
+                    Some(parser::tts_to_string(&account.account_type_path))
+                }
                 _ => None,
             },
             AccountField::CompositeField(field) => Some(field.symbol.clone()),
-        };
-
-        qualified_ty_name.map(|name| match name.rsplit_once(" :: ") {
-            Some((_prefix, suffix)) => suffix.to_string(),
-            None => name,
-        })
+        }
     }
 }
 
@@ -225,8 +214,8 @@ impl AccountField {
 pub struct Field {
     pub ident: Ident,
     pub constraints: ConstraintGroup,
+    pub instruction_constraints: ConstraintGroup,
     pub ty: Ty,
-    pub is_optional: bool,
     /// IDL Doc comment
     pub docs: Option<Vec<String>>,
 }
@@ -234,16 +223,16 @@ pub struct Field {
 impl Field {
     pub fn typed_ident(&self) -> proc_macro2::TokenStream {
         let name = &self.ident;
-        let ty_decl = self.ty_decl(false);
+        let ty_decl = self.ty_decl();
         quote! {
             #name: #ty_decl
         }
     }
 
-    pub fn ty_decl(&self, ignore_option: bool) -> proc_macro2::TokenStream {
+    pub fn ty_decl(&self) -> proc_macro2::TokenStream {
         let account_ty = self.account_ty();
         let container_ty = self.container_ty();
-        let inner_ty = match &self.ty {
+        match &self.ty {
             Ty::AccountInfo => quote! {
                 AccountInfo
             },
@@ -259,8 +248,7 @@ impl Field {
             Ty::SystemAccount => quote! {
                 SystemAccount
             },
-            Ty::Account(AccountTy { boxed, .. })
-            | Ty::InterfaceAccount(InterfaceAccountTy { boxed, .. }) => {
+            Ty::Account(AccountTy { boxed, .. }) => {
                 if *boxed {
                     quote! {
                         Box<#container_ty<#account_ty>>
@@ -291,20 +279,11 @@ impl Field {
             _ => quote! {
                 #container_ty<#account_ty>
             },
-        };
-        if self.is_optional && !ignore_option {
-            quote! {
-                Option<#inner_ty>
-            }
-        } else {
-            quote! {
-                #inner_ty
-            }
         }
     }
 
-    // Ignores optional accounts. Optional account checks and handing should be done prior to this
-    // function being called.
+    // TODO: remove the option once `CpiAccount` is completely removed (not
+    //       just deprecated).
     pub fn from_account_info(
         &self,
         kind: Option<&InitKind>,
@@ -314,9 +293,9 @@ impl Field {
         let field_str = field.to_string();
         let container_ty = self.container_ty();
         let owner_addr = match &kind {
-            None => quote! { __program_id },
+            None => quote! { program_id },
             Some(InitKind::Program { .. }) => quote! {
-                __program_id
+                program_id
             },
             _ => quote! {
                 &anchor_spl::token::ID
@@ -325,23 +304,20 @@ impl Field {
         match &self.ty {
             Ty::AccountInfo => quote! { #field.to_account_info() },
             Ty::UncheckedAccount => {
-                quote! { UncheckedAccount::try_from(&#field) }
+                quote! { UncheckedAccount::try_from(#field.to_account_info()) }
             }
-            Ty::Account(AccountTy { boxed, .. })
-            | Ty::InterfaceAccount(InterfaceAccountTy { boxed, .. }) => {
+            Ty::Account(AccountTy { boxed, .. }) => {
                 let stream = if checked {
                     quote! {
-                        match #container_ty::try_from(&#field) {
-                            Ok(val) => val,
-                            Err(e) => return Err(e.with_account_name(#field_str))
-                        }
+                        #container_ty::try_from(
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
                     }
                 } else {
                     quote! {
-                        match #container_ty::try_from_unchecked(&#field) {
-                            Ok(val) => val,
-                            Err(e) => return Err(e.with_account_name(#field_str))
-                        }
+                        #container_ty::try_from_unchecked(
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
                     }
                 };
                 if *boxed {
@@ -352,37 +328,51 @@ impl Field {
                     stream
                 }
             }
-            Ty::AccountLoader(_) => {
+            Ty::CpiAccount(_) => {
                 if checked {
                     quote! {
-                        match #container_ty::try_from(&#field) {
-                            Ok(val) => val,
-                            Err(e) => return Err(e.with_account_name(#field_str))
-                        }
+                        #container_ty::try_from(
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
                     }
                 } else {
                     quote! {
-                        match #container_ty::try_from_unchecked(#owner_addr, &#field) {
-                            Ok(val) => val,
-                            Err(e) => return Err(e.with_account_name(#field_str))
-                        }
+                        #container_ty::try_from_unchecked(
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
+                    }
+                }
+            }
+            Ty::AccountLoader(_) => {
+                if checked {
+                    quote! {
+                        #container_ty::try_from(
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
+                    }
+                } else {
+                    quote! {
+                        #container_ty::try_from_unchecked(
+                            #owner_addr,
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
                     }
                 }
             }
             _ => {
                 if checked {
                     quote! {
-                        match #container_ty::try_from(#owner_addr, &#field) {
-                            Ok(val) => val,
-                            Err(e) => return Err(e.with_account_name(#field_str))
-                        }
+                        #container_ty::try_from(
+                            #owner_addr,
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
                     }
                 } else {
                     quote! {
-                        match #container_ty::try_from_unchecked(#owner_addr, &#field) {
-                            Ok(val) => val,
-                            Err(e) => return Err(e.with_account_name(#field_str))
-                        }
+                        #container_ty::try_from_unchecked(
+                            #owner_addr,
+                            &#field,
+                        ).map_err(|e| e.with_account_name(#field_str))?
                     }
                 }
             }
@@ -391,18 +381,25 @@ impl Field {
 
     pub fn container_ty(&self) -> proc_macro2::TokenStream {
         match &self.ty {
+            Ty::ProgramAccount(_) => quote! {
+                anchor_lang::accounts::program_account::ProgramAccount
+            },
             Ty::Account(_) => quote! {
                 anchor_lang::accounts::account::Account
             },
             Ty::AccountLoader(_) => quote! {
                 anchor_lang::accounts::account_loader::AccountLoader
             },
+            Ty::Loader(_) => quote! {
+                anchor_lang::accounts::loader::Loader
+            },
+            Ty::CpiAccount(_) => quote! {
+                anchor_lang::accounts::cpi_account::CpiAccount
+            },
             Ty::Sysvar(_) => quote! { anchor_lang::accounts::sysvar::Sysvar },
+            Ty::CpiState(_) => quote! { anchor_lang::accounts::cpi_state::CpiState },
+            Ty::ProgramState(_) => quote! { anchor_lang::accounts::state::ProgramState },
             Ty::Program(_) => quote! { anchor_lang::accounts::program::Program },
-            Ty::Interface(_) => quote! { anchor_lang::accounts::interface::Interface },
-            Ty::InterfaceAccount(_) => {
-                quote! { anchor_lang::accounts::interface_account::InterfaceAccount }
-            }
             Ty::AccountInfo => quote! {},
             Ty::UncheckedAccount => quote! {},
             Ty::Signer => quote! {},
@@ -429,13 +426,13 @@ impl Field {
             Ty::ProgramData => quote! {
                 ProgramData
             },
-            Ty::Account(ty) => {
+            Ty::ProgramAccount(ty) => {
                 let ident = &ty.account_type_path;
                 quote! {
                     #ident
                 }
             }
-            Ty::InterfaceAccount(ty) => {
+            Ty::Account(ty) => {
                 let ident = &ty.account_type_path;
                 quote! {
                     #ident
@@ -445,6 +442,30 @@ impl Field {
                 let ident = &ty.account_type_path;
                 quote! {
                     #ident
+                }
+            }
+            Ty::Loader(ty) => {
+                let ident = &ty.account_type_path;
+                quote! {
+                    #ident
+                }
+            }
+            Ty::CpiAccount(ty) => {
+                let ident = &ty.account_type_path;
+                quote! {
+                    #ident
+                }
+            }
+            Ty::ProgramState(ty) => {
+                let account = &ty.account_type_path;
+                quote! {
+                    #account
+                }
+            }
+            Ty::CpiState(ty) => {
+                let account = &ty.account_type_path;
+                quote! {
+                    #account
                 }
             }
             Ty::Sysvar(ty) => match ty {
@@ -465,12 +486,6 @@ impl Field {
                     #program
                 }
             }
-            Ty::Interface(ty) => {
-                let program = &ty.account_type_path;
-                quote! {
-                    #program
-                }
-            }
         }
     }
 }
@@ -479,6 +494,7 @@ impl Field {
 pub struct CompositeField {
     pub ident: Ident,
     pub constraints: ConstraintGroup,
+    pub instruction_constraints: ConstraintGroup,
     pub symbol: String,
     pub raw_field: syn::Field,
     /// IDL Doc comment
@@ -486,22 +502,25 @@ pub struct CompositeField {
 }
 
 // A type of an account field.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Ty {
     AccountInfo,
     UncheckedAccount,
+    ProgramState(ProgramStateTy),
+    CpiState(CpiStateTy),
+    ProgramAccount(ProgramAccountTy),
+    Loader(LoaderTy),
     AccountLoader(AccountLoaderTy),
+    CpiAccount(CpiAccountTy),
     Sysvar(SysvarTy),
     Account(AccountTy),
     Program(ProgramTy),
-    Interface(InterfaceTy),
-    InterfaceAccount(InterfaceAccountTy),
     Signer,
     SystemAccount,
     ProgramData,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum SysvarTy {
     Clock,
     Rent,
@@ -515,13 +534,41 @@ pub enum SysvarTy {
     Rewards,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
+pub struct ProgramStateTy {
+    pub account_type_path: TypePath,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CpiStateTy {
+    pub account_type_path: TypePath,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ProgramAccountTy {
+    // The struct type of the account.
+    pub account_type_path: TypePath,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CpiAccountTy {
+    // The struct type of the account.
+    pub account_type_path: TypePath,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct AccountLoaderTy {
     // The struct type of the account.
     pub account_type_path: TypePath,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
+pub struct LoaderTy {
+    // The struct type of the account.
+    pub account_type_path: TypePath,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct AccountTy {
     // The struct type of the account.
     pub account_type_path: TypePath,
@@ -529,22 +576,8 @@ pub struct AccountTy {
     pub boxed: bool,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct InterfaceAccountTy {
-    // The struct type of the account.
-    pub account_type_path: TypePath,
-    // True if the account has been boxed via `Box<T>`.
-    pub boxed: bool,
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct ProgramTy {
-    // The struct type of the account.
-    pub account_type_path: TypePath,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct InterfaceTy {
     // The struct type of the account.
     pub account_type_path: TypePath,
 }
@@ -587,22 +620,23 @@ pub struct ErrorCode {
 // All well formed constraints on a single `Accounts` field.
 #[derive(Debug, Default, Clone)]
 pub struct ConstraintGroup {
-    pub init: Option<ConstraintInitGroup>,
-    pub zeroed: Option<ConstraintZeroed>,
-    pub mutable: Option<ConstraintMut>,
-    pub signer: Option<ConstraintSigner>,
-    pub owner: Option<ConstraintOwner>,
-    pub rent_exempt: Option<ConstraintRentExempt>,
-    pub seeds: Option<ConstraintSeedsGroup>,
-    pub executable: Option<ConstraintExecutable>,
-    pub has_one: Vec<ConstraintHasOne>,
-    pub raw: Vec<ConstraintRaw>,
-    pub close: Option<ConstraintClose>,
-    pub address: Option<ConstraintAddress>,
-    pub associated_token: Option<ConstraintAssociatedToken>,
-    pub token_account: Option<ConstraintTokenAccountGroup>,
-    pub mint: Option<ConstraintTokenMintGroup>,
-    pub realloc: Option<ConstraintReallocGroup>,
+    init: Option<ConstraintInitGroup>,
+    zeroed: Option<ConstraintZeroed>,
+    mutable: Option<ConstraintMut>,
+    signer: Option<ConstraintSigner>,
+    owner: Option<ConstraintOwner>,
+    rent_exempt: Option<ConstraintRentExempt>,
+    seeds: Option<ConstraintSeedsGroup>,
+    executable: Option<ConstraintExecutable>,
+    state: Option<ConstraintState>,
+    has_one: Vec<ConstraintHasOne>,
+    literal: Vec<ConstraintLiteral>,
+    raw: Vec<ConstraintRaw>,
+    close: Option<ConstraintClose>,
+    address: Option<ConstraintAddress>,
+    associated_token: Option<ConstraintAssociatedToken>,
+    token_account: Option<ConstraintTokenAccountGroup>,
+    mint: Option<ConstraintTokenMintGroup>,
 }
 
 impl ConstraintGroup {
@@ -634,17 +668,18 @@ pub enum Constraint {
     Mut(ConstraintMut),
     Signer(ConstraintSigner),
     HasOne(ConstraintHasOne),
+    Literal(ConstraintLiteral),
     Raw(ConstraintRaw),
     Owner(ConstraintOwner),
     RentExempt(ConstraintRentExempt),
     Seeds(ConstraintSeedsGroup),
     AssociatedToken(ConstraintAssociatedToken),
     Executable(ConstraintExecutable),
+    State(ConstraintState),
     Close(ConstraintClose),
     Address(ConstraintAddress),
     TokenAccount(ConstraintTokenAccountGroup),
     Mint(ConstraintTokenMintGroup),
-    Realloc(ConstraintReallocGroup),
 }
 
 // Constraint token is a single keyword in a `#[account(<TOKEN>)]` attribute.
@@ -656,45 +691,26 @@ pub enum ConstraintToken {
     Mut(Context<ConstraintMut>),
     Signer(Context<ConstraintSigner>),
     HasOne(Context<ConstraintHasOne>),
+    Literal(Context<ConstraintLiteral>),
     Raw(Context<ConstraintRaw>),
     Owner(Context<ConstraintOwner>),
     RentExempt(Context<ConstraintRentExempt>),
     Seeds(Context<ConstraintSeeds>),
     Executable(Context<ConstraintExecutable>),
+    State(Context<ConstraintState>),
     Close(Context<ConstraintClose>),
     Payer(Context<ConstraintPayer>),
     Space(Context<ConstraintSpace>),
     Address(Context<ConstraintAddress>),
     TokenMint(Context<ConstraintTokenMint>),
     TokenAuthority(Context<ConstraintTokenAuthority>),
-    TokenTokenProgram(Context<ConstraintTokenProgram>),
     AssociatedTokenMint(Context<ConstraintTokenMint>),
     AssociatedTokenAuthority(Context<ConstraintTokenAuthority>),
-    AssociatedTokenTokenProgram(Context<ConstraintTokenProgram>),
     MintAuthority(Context<ConstraintMintAuthority>),
     MintFreezeAuthority(Context<ConstraintMintFreezeAuthority>),
     MintDecimals(Context<ConstraintMintDecimals>),
-    MintTokenProgram(Context<ConstraintTokenProgram>),
     Bump(Context<ConstraintTokenBump>),
     ProgramSeed(Context<ConstraintProgramSeed>),
-    Realloc(Context<ConstraintRealloc>),
-    ReallocPayer(Context<ConstraintReallocPayer>),
-    ReallocZero(Context<ConstraintReallocZero>),
-    // extensions
-    ExtensionGroupPointerAuthority(Context<ConstraintExtensionAuthority>),
-    ExtensionGroupPointerGroupAddress(Context<ConstraintExtensionGroupPointerGroupAddress>),
-    ExtensionGroupMemberPointerAuthority(Context<ConstraintExtensionAuthority>),
-    ExtensionGroupMemberPointerMemberAddress(
-        Context<ConstraintExtensionGroupMemberPointerMemberAddress>,
-    ),
-    ExtensionMetadataPointerAuthority(Context<ConstraintExtensionAuthority>),
-    ExtensionMetadataPointerMetadataAddress(
-        Context<ConstraintExtensionMetadataPointerMetadataAddress>,
-    ),
-    ExtensionCloseAuthority(Context<ConstraintExtensionAuthority>),
-    ExtensionTokenHookAuthority(Context<ConstraintExtensionAuthority>),
-    ExtensionTokenHookProgramId(Context<ConstraintExtensionTokenHookProgramId>),
-    ExtensionPermanentDelegate(Context<ConstraintExtensionPermanentDelegate>),
 }
 
 impl Parse for ConstraintToken {
@@ -720,28 +736,6 @@ pub struct ConstraintMut {
 }
 
 #[derive(Debug, Clone)]
-pub struct ConstraintReallocGroup {
-    pub payer: Expr,
-    pub space: Expr,
-    pub zero: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintRealloc {
-    pub space: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintReallocPayer {
-    pub target: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintReallocZero {
-    pub zero: Expr,
-}
-
-#[derive(Debug, Clone)]
 pub struct ConstraintSigner {
     pub error: Option<Expr>,
 }
@@ -750,6 +744,11 @@ pub struct ConstraintSigner {
 pub struct ConstraintHasOne {
     pub join_target: Expr,
     pub error: Option<Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConstraintLiteral {
+    pub lit: LitStr,
 }
 
 #[derive(Debug, Clone)]
@@ -802,6 +801,11 @@ pub struct ConstraintSeeds {
 pub struct ConstraintExecutable {}
 
 #[derive(Debug, Clone)]
+pub struct ConstraintState {
+    pub program_target: Ident,
+}
+
+#[derive(Debug, Clone)]
 pub struct ConstraintPayer {
     pub target: Expr,
 }
@@ -811,44 +815,10 @@ pub struct ConstraintSpace {
     pub space: Expr,
 }
 
-// extension constraints
-#[derive(Debug, Clone)]
-pub struct ConstraintExtensionAuthority {
-    pub authority: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintExtensionGroupPointerGroupAddress {
-    pub group_address: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintExtensionGroupMemberPointerMemberAddress {
-    pub member_address: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintExtensionMetadataPointerMetadataAddress {
-    pub metadata_address: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintExtensionTokenHookProgramId {
-    pub program_id: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintExtensionPermanentDelegate {
-    pub permanent_delegate: Expr,
-}
-
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum InitKind {
     Program {
-        owner: Option<Expr>,
-    },
-    Interface {
         owner: Option<Expr>,
     },
     // Owner for token and mint represents the authority. Not to be confused
@@ -856,29 +826,15 @@ pub enum InitKind {
     Token {
         owner: Expr,
         mint: Expr,
-        token_program: Option<Expr>,
     },
     AssociatedToken {
         owner: Expr,
         mint: Expr,
-        token_program: Option<Expr>,
     },
     Mint {
         owner: Expr,
         freeze_authority: Option<Expr>,
         decimals: Expr,
-        token_program: Option<Expr>,
-        // extensions
-        group_pointer_authority: Option<Expr>,
-        group_pointer_group_address: Option<Expr>,
-        group_member_pointer_authority: Option<Expr>,
-        group_member_pointer_member_address: Option<Expr>,
-        metadata_pointer_authority: Option<Expr>,
-        metadata_pointer_metadata_address: Option<Expr>,
-        close_authority: Option<Expr>,
-        permanent_delegate: Option<Expr>,
-        transfer_hook_authority: Option<Expr>,
-        transfer_hook_program_id: Option<Expr>,
     },
 }
 
@@ -889,96 +845,49 @@ pub struct ConstraintClose {
 
 #[derive(Debug, Clone)]
 pub struct ConstraintTokenMint {
-    pub mint: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintConfidentialTransferData {
-    pub confidential_transfer_data: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintMetadata {
-    pub token_metadata: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintTokenGroupData {
-    pub token_group_data: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintTokenGroupMemberData {
-    pub token_group_member_data: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintMetadataPointerData {
-    pub metadata_pointer_data: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintGroupPointerData {
-    pub group_pointer_data: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintGroupMemberPointerData {
-    pub group_member_pointer_data: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintMintCloseAuthority {
-    pub close_authority: Expr,
+    mint: Expr,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintTokenAuthority {
-    pub auth: Expr,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConstraintTokenProgram {
-    token_program: Expr,
+    auth: Expr,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintMintAuthority {
-    pub mint_auth: Expr,
+    mint_auth: Expr,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintMintFreezeAuthority {
-    pub mint_freeze_auth: Expr,
+    mint_freeze_auth: Expr,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintMintDecimals {
-    pub decimals: Expr,
+    decimals: Expr,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintTokenBump {
-    pub bump: Option<Expr>,
+    bump: Option<Expr>,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintProgramSeed {
-    pub program_seed: Expr,
+    program_seed: Expr,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintAssociatedToken {
     pub wallet: Expr,
     pub mint: Expr,
-    pub token_program: Option<Expr>,
 }
 
 #[derive(Debug, Clone)]
 pub struct ConstraintTokenAccountGroup {
     pub mint: Option<Expr>,
     pub authority: Option<Expr>,
-    pub token_program: Option<Expr>,
 }
 
 #[derive(Debug, Clone)]
@@ -986,17 +895,6 @@ pub struct ConstraintTokenMintGroup {
     pub decimals: Option<Expr>,
     pub mint_authority: Option<Expr>,
     pub freeze_authority: Option<Expr>,
-    pub token_program: Option<Expr>,
-    pub group_pointer_authority: Option<Expr>,
-    pub group_pointer_group_address: Option<Expr>,
-    pub group_member_pointer_authority: Option<Expr>,
-    pub group_member_pointer_member_address: Option<Expr>,
-    pub metadata_pointer_authority: Option<Expr>,
-    pub metadata_pointer_metadata_address: Option<Expr>,
-    pub close_authority: Option<Expr>,
-    pub permanent_delegate: Option<Expr>,
-    pub transfer_hook_authority: Option<Expr>,
-    pub transfer_hook_program_id: Option<Expr>,
 }
 
 // Syntaxt context object for preserving metadata about the inner item.

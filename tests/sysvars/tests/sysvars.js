@@ -1,4 +1,4 @@
-const anchor = require("@coral-xyz/anchor");
+const anchor = require("@project-serum/anchor");
 const { assert } = require("chai");
 
 describe("sysvars", () => {

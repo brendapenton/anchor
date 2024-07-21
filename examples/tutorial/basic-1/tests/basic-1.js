@@ -1,5 +1,5 @@
 const assert = require("assert");
-const anchor = require("@coral-xyz/anchor");
+const anchor = require("@project-serum/anchor");
 const { SystemProgram } = anchor.web3;
 
 describe("basic-1", () => {
@@ -19,15 +19,14 @@ describe("basic-1", () => {
 
     // Create the new account and initialize it with the program.
     // #region code-simplified
-    await program.methods
-      .initialize(new anchor.BN(1234))
-      .accounts({
+    await program.rpc.initialize(new anchor.BN(1234), {
+      accounts: {
         myAccount: myAccount.publicKey,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
-      })
-      .signers([myAccount])
-      .rpc();
+      },
+      signers: [myAccount],
+    });
     // #endregion code-simplified
 
     // Fetch the newly created account from the cluster.
@@ -49,12 +48,11 @@ describe("basic-1", () => {
     const program = anchor.workspace.Basic1;
 
     // Invoke the update rpc.
-    await program.methods
-      .update(new anchor.BN(4321))
-      .accounts({
+    await program.rpc.update(new anchor.BN(4321), {
+      accounts: {
         myAccount: myAccount.publicKey,
-      })
-      .rpc();
+      },
+    });
 
     // Fetch the newly updated account.
     const account = await program.account.myAccount.fetch(myAccount.publicKey);

@@ -131,10 +131,6 @@ mod errors {
         require_gte!(5, 10);
         Ok(())
     }
-
-    pub fn try_into_integer(_ctx: Context<Hello>) -> Result<i64> {
-        Ok(u64::MAX.try_into()?)
-    }
 }
 
 #[derive(Accounts)]

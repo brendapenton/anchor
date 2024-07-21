@@ -1,10 +1,9 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import * as anchor from "@project-serum/anchor";
+import { Program } from "@project-serum/anchor";
 import { IdlCommandsOne } from "../target/types/idl_commands_one";
 import { IdlCommandsTwo } from "../target/types/idl_commands_two";
 import { assert } from "chai";
 import { execSync } from "child_process";
-import * as fs from "fs";
 
 describe("Test CLI IDL commands", () => {
   // Configure the client to use the local cluster.
@@ -24,12 +23,12 @@ describe("Test CLI IDL commands", () => {
 
   it("Can fetch an IDL using the TypeScript client", async () => {
     const idl = await anchor.Program.fetchIdl(programOne.programId, provider);
-    assert.deepEqual(idl, programOne.rawIdl);
+    assert.deepEqual(idl, programOne.idl);
   });
 
   it("Can fetch an IDL via the CLI", async () => {
     const idl = execSync(`anchor idl fetch ${programOne.programId}`).toString();
-    assert.deepEqual(JSON.parse(idl), programOne.rawIdl);
+    assert.deepEqual(JSON.parse(idl), programOne.idl);
   });
 
   it("Can write a new IDL using the upgrade command", async () => {
@@ -39,7 +38,7 @@ describe("Test CLI IDL commands", () => {
       { stdio: "inherit" }
     );
     const idl = await anchor.Program.fetchIdl(programOne.programId, provider);
-    assert.deepEqual(idl, programTwo.rawIdl);
+    assert.deepEqual(idl, programTwo.idl);
   });
 
   it("Can write a new IDL using write-buffer and set-buffer", async () => {
@@ -53,7 +52,7 @@ describe("Test CLI IDL commands", () => {
       { stdio: "inherit" }
     );
     const idl = await anchor.Program.fetchIdl(programOne.programId, provider);
-    assert.deepEqual(idl, programOne.rawIdl);
+    assert.deepEqual(idl, programOne.idl);
   });
 
   it("Can fetch an IDL authority via the CLI", async () => {
@@ -62,26 +61,5 @@ describe("Test CLI IDL commands", () => {
       .trim();
 
     assert.equal(authority, provider.wallet.publicKey.toString());
-  });
-
-  it("Can close IDL account", async () => {
-    execSync(`anchor idl close ${programOne.programId}`, { stdio: "inherit" });
-    const idl = await anchor.Program.fetchIdl(programOne.programId, provider);
-    assert.isNull(idl);
-  });
-
-  it("Can initialize super massive IDL account", async () => {
-    execSync(
-      `anchor idl init --filepath testLargeIdl.json ${programOne.programId}`,
-      { stdio: "inherit" }
-    );
-    const idlActual = await anchor.Program.fetchIdl(
-      programOne.programId,
-      provider
-    );
-    const idlExpected = JSON.parse(
-      fs.readFileSync("testLargeIdl.json", "utf8")
-    );
-    assert.deepEqual(idlActual, idlExpected);
   });
 });

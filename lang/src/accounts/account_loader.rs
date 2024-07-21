@@ -11,7 +11,7 @@ use solana_program::account_info::AccountInfo;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
 use std::cell::{Ref, RefMut};
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fmt;
 use std::io::Write;
 use std::marker::PhantomData;
@@ -21,7 +21,7 @@ use std::ops::DerefMut;
 /// Type facilitating on demand zero copy deserialization.
 ///
 /// Note that using accounts in this way is distinctly different from using,
-/// for example, the [`Account`](crate::accounts::account::Account). Namely,
+/// for example, the [`Account`](./struct.Account.html). Namely,
 /// one must call
 /// - `load_init` after initializing an account (this will ignore the missing
 /// account discriminator that gets added only after the user's instruction code)
@@ -29,7 +29,7 @@ use std::ops::DerefMut;
 /// - `load_mut` when the account is mutable
 ///
 /// For more details on zero-copy-deserialization, see the
-/// [`account`](crate::account) attribute.
+/// [`account`](./attr.account.html) attribute.
 /// <p style=";padding:0.75em;border: 1px solid #ee6868">
 /// <strong>⚠️ </strong> When using this type it's important to be mindful
 /// of any calls to the <code>load</code> functions so as not to
@@ -95,7 +95,7 @@ use std::ops::DerefMut;
 /// ```
 #[derive(Clone)]
 pub struct AccountLoader<'info, T: ZeroCopy + Owner> {
-    acc_info: &'info AccountInfo<'info>,
+    acc_info: AccountInfo<'info>,
     phantom: PhantomData<&'info T>,
 }
 
@@ -109,7 +109,7 @@ impl<'info, T: ZeroCopy + Owner + fmt::Debug> fmt::Debug for AccountLoader<'info
 }
 
 impl<'info, T: ZeroCopy + Owner> AccountLoader<'info, T> {
-    fn new(acc_info: &'info AccountInfo<'info>) -> AccountLoader<'info, T> {
+    fn new(acc_info: AccountInfo<'info>) -> AccountLoader<'info, T> {
         Self {
             acc_info,
             phantom: PhantomData,
@@ -118,7 +118,7 @@ impl<'info, T: ZeroCopy + Owner> AccountLoader<'info, T> {
 
     /// Constructs a new `Loader` from a previously initialized account.
     #[inline(never)]
-    pub fn try_from(acc_info: &'info AccountInfo<'info>) -> Result<AccountLoader<'info, T>> {
+    pub fn try_from(acc_info: &AccountInfo<'info>) -> Result<AccountLoader<'info, T>> {
         if acc_info.owner != &T::owner() {
             return Err(Error::from(ErrorCode::AccountOwnedByWrongProgram)
                 .with_pubkeys((*acc_info.owner, T::owner())));
@@ -133,20 +133,20 @@ impl<'info, T: ZeroCopy + Owner> AccountLoader<'info, T> {
             return Err(ErrorCode::AccountDiscriminatorMismatch.into());
         }
 
-        Ok(AccountLoader::new(acc_info))
+        Ok(AccountLoader::new(acc_info.clone()))
     }
 
     /// Constructs a new `Loader` from an uninitialized account.
     #[inline(never)]
     pub fn try_from_unchecked(
         _program_id: &Pubkey,
-        acc_info: &'info AccountInfo<'info>,
+        acc_info: &AccountInfo<'info>,
     ) -> Result<AccountLoader<'info, T>> {
         if acc_info.owner != &T::owner() {
             return Err(Error::from(ErrorCode::AccountOwnedByWrongProgram)
                 .with_pubkeys((*acc_info.owner, T::owner())));
         }
-        Ok(AccountLoader::new(acc_info))
+        Ok(AccountLoader::new(acc_info.clone()))
     }
 
     /// Returns a Ref to the account data structure for reading.
@@ -214,14 +214,13 @@ impl<'info, T: ZeroCopy + Owner> AccountLoader<'info, T> {
     }
 }
 
-impl<'info, B, T: ZeroCopy + Owner> Accounts<'info, B> for AccountLoader<'info, T> {
+impl<'info, T: ZeroCopy + Owner> Accounts<'info> for AccountLoader<'info, T> {
     #[inline(never)]
     fn try_accounts(
         _program_id: &Pubkey,
-        accounts: &mut &'info [AccountInfo<'info>],
+        accounts: &mut &[AccountInfo<'info>],
         _ix_data: &[u8],
-        _bumps: &mut B,
-        _reallocs: &mut BTreeSet<Pubkey>,
+        _bumps: &mut BTreeMap<String, u8>,
     ) -> Result<Self> {
         if accounts.is_empty() {
             return Err(ErrorCode::AccountNotEnoughKeys.into());
@@ -235,18 +234,22 @@ impl<'info, B, T: ZeroCopy + Owner> Accounts<'info, B> for AccountLoader<'info, 
 
 impl<'info, T: ZeroCopy + Owner> AccountsExit<'info> for AccountLoader<'info, T> {
     // The account *cannot* be loaded when this is called.
-    fn exit(&self, program_id: &Pubkey) -> Result<()> {
-        // Only persist if the owner is the current program and the account is not closed.
-        if &T::owner() == program_id && !crate::common::is_closed(self.acc_info) {
-            let mut data = self.acc_info.try_borrow_mut_data()?;
-            let dst: &mut [u8] = &mut data;
-            let mut writer = BpfWriter::new(dst);
-            writer.write_all(&T::discriminator()).unwrap();
-        }
+    fn exit(&self, _program_id: &Pubkey) -> Result<()> {
+        let mut data = self.acc_info.try_borrow_mut_data()?;
+        let dst: &mut [u8] = &mut data;
+        let mut writer = BpfWriter::new(dst);
+        writer.write_all(&T::discriminator()).unwrap();
         Ok(())
     }
 }
 
+/// This function is for INTERNAL USE ONLY.
+/// Do NOT use this function in a program.
+/// Manual closing of `AccountLoader<'info, T>` types is NOT supported.
+///
+/// Details: Using `close` with `AccountLoader<'info, T>` is not safe because
+/// it requires the `mut` constraint but for that type the constraint
+/// overwrites the "closed account" discriminator at the end of the instruction.
 impl<'info, T: ZeroCopy + Owner> AccountsClose<'info> for AccountLoader<'info, T> {
     fn close(&self, sol_destination: AccountInfo<'info>) -> Result<()> {
         crate::common::close(self.to_account_info(), sol_destination)
@@ -266,7 +269,7 @@ impl<'info, T: ZeroCopy + Owner> ToAccountMetas for AccountLoader<'info, T> {
 
 impl<'info, T: ZeroCopy + Owner> AsRef<AccountInfo<'info>> for AccountLoader<'info, T> {
     fn as_ref(&self) -> &AccountInfo<'info> {
-        self.acc_info
+        &self.acc_info
     }
 }
 

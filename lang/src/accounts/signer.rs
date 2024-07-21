@@ -4,7 +4,7 @@ use crate::{Accounts, AccountsExit, Key, Result, ToAccountInfos, ToAccountMetas}
 use solana_program::account_info::AccountInfo;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::ops::Deref;
 
 /// Type validating that the account signed the transaction. No other ownership
@@ -36,32 +36,31 @@ use std::ops::Deref;
 /// When creating an account with `init`, the `payer` needs to sign the transaction.
 #[derive(Debug, Clone)]
 pub struct Signer<'info> {
-    info: &'info AccountInfo<'info>,
+    info: AccountInfo<'info>,
 }
 
 impl<'info> Signer<'info> {
-    fn new(info: &'info AccountInfo<'info>) -> Signer<'info> {
+    fn new(info: AccountInfo<'info>) -> Signer<'info> {
         Self { info }
     }
 
     /// Deserializes the given `info` into a `Signer`.
     #[inline(never)]
-    pub fn try_from(info: &'info AccountInfo<'info>) -> Result<Signer<'info>> {
+    pub fn try_from(info: &AccountInfo<'info>) -> Result<Signer<'info>> {
         if !info.is_signer {
             return Err(ErrorCode::AccountNotSigner.into());
         }
-        Ok(Signer::new(info))
+        Ok(Signer::new(info.clone()))
     }
 }
 
-impl<'info, B> Accounts<'info, B> for Signer<'info> {
+impl<'info> Accounts<'info> for Signer<'info> {
     #[inline(never)]
     fn try_accounts(
         _program_id: &Pubkey,
-        accounts: &mut &'info [AccountInfo<'info>],
+        accounts: &mut &[AccountInfo<'info>],
         _ix_data: &[u8],
-        _bumps: &mut B,
-        _reallocs: &mut BTreeSet<Pubkey>,
+        _bumps: &mut BTreeMap<String, u8>,
     ) -> Result<Self> {
         if accounts.is_empty() {
             return Err(ErrorCode::AccountNotEnoughKeys.into());
@@ -93,7 +92,7 @@ impl<'info> ToAccountInfos<'info> for Signer<'info> {
 
 impl<'info> AsRef<AccountInfo<'info>> for Signer<'info> {
     fn as_ref(&self) -> &AccountInfo<'info> {
-        self.info
+        &self.info
     }
 }
 
@@ -101,7 +100,7 @@ impl<'info> Deref for Signer<'info> {
     type Target = AccountInfo<'info>;
 
     fn deref(&self) -> &Self::Target {
-        self.info
+        &self.info
     }
 }
 
